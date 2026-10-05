@@ -1,88 +1,57 @@
 /*
- * Design tokens. Contrast ratios measured with scripts/contrast.mjs against --paper.
- * Gold system adapted from the Guardian Civil Services reference (#B8915A accent).
+ * Design tokens. Contrast ratios measured with scripts/contrast.mjs (WCAG 2.x).
  */
 :root {
-  /* surfaces */
-  --paper: #FAF8F4;          /* warm white canvas */
-  --paper-warm: #F4EDE1;     /* faint warm variation (background depth only) */
-  --tint: rgb(232 210 168 / 0.17); /* hover wash behind a service's copy */
+  /* light surfaces */
+  --ivory-header: #F7F4EE;   /* header */
+  --ivory: #F7F3EC;          /* selector section + footer */
 
-  /* ink */
-  --ink: #242629;            /* 14.30 : 1 — headings, benefit lines */
-  --ink-2: #565B61;          /*  6.46 : 1 — supporting text */
-  --ink-3: #4A4F55;          /*  8.0  : 1 — footer links */
+  /* dark hero */
+  --charcoal: #1D2326;
+  --charcoal-2: #252B2D;
+  --hero-text: #F4EFE6;      /* 13.88 : 1 on --charcoal */
+  --hero-text-2: #C9C2B6;    /*  8.99 : 1 on --charcoal — supporting sentence */
+  --hero-quote: #E3D7C2;     /* 11.18 : 1 */
+  --hero-cite: #ADA394;      /*  6.39 : 1 (5.77 on --charcoal-2) */
 
-  /* gold — decorative (never small text on paper) */
-  --gold: #B8915A;           /* reference gold, 2.74 : 1 */
-  --gold-mid: #C49C61;
-  --gold-champagne: #E8D2A8;
+  /* ink on ivory */
+  --ink: #242629;            /* 13.72 : 1 on --ivory */
+  --ink-2: #565B61;          /*  6.20 : 1 */
+  --ink-3: #4A4F55;          /*  7.47 : 1 */
+
+  /* bronze / gold */
+  --bronze: #B8915A;         /* reference accent: 2.62 : 1 on ivory — rules, borders, connectors only */
+  --bronze-deep: #8A6438;    /* emphasised connectors (4.79 : 1) */
+  --bronze-soft: #D3BE98;    /* connectors at rest */
+  --gold-ink: #71502C;       /* gold text on ivory: 6.58 : 1 */
+  --champagne: #E8D2A8;
+  --champagne-wash: #F1E6D2; /* QME hover fill */
   --gold-reflect: #FFF1CE;
-  --gold-deep: #9C7845;      /* 3.82 : 1 — strokes that must read on paper */
-  /* gold — text */
-  --gold-dark: #71502C;      /* 6.86 : 1 — CTAs, attribution accents, borders */
+
+  /* hairline in metal: dark ends, one soft glint (never near the canvas colour) */
+  --metal-line: linear-gradient(90deg, #71502C 0%, #9C7845 16%, #C9A46C 32%, #DDBE88 40%, #C49C61 50%, #A47F4A 72%, #7A5730 100%);
 
   /* lines */
-  --rule: #E4DCCE;           /* hairline separators */
-  --rule-strong: #CDBFA8;
-  --connector: #D2C3A8;      /* connector hairline at rest */
-
-  /*
-   * Brushed metal. One narrow reflective band above the middle, darker edges,
-   * warm midtones — no alternating stripes.
-   */
-  --metal-surface: linear-gradient(
-    180deg,
-    #A9844E 0%,
-    #C49C61 14%,
-    #DDBF8A 30%,
-    #F3E1BB 40%,
-    #FFF1CE 45%,
-    #EBD3A4 51%,
-    #D2AE74 66%,
-    #C29A60 84%,
-    #A47F4A 100%
-  );
-  /* Hairlines: dark ends and one soft glint toward the left third. The glint stays well
-     darker than the canvas, so a 1 px rule never reads as broken. */
-  --metal-line: linear-gradient(
-    90deg,
-    #71502C 0%,
-    #9C7845 16%,
-    #C9A46C 32%,
-    #DDBE88 40%,
-    #C49C61 50%,
-    #A47F4A 72%,
-    #7A5730 100%
-  );
-
-  /* pyramid surfaces (one coherent surface per level; deepening toward the apex) */
-  --tier-foundation: #ECE6DB;
-  --tier-foundation-hover: #E4DCCD;
-  --tier-middle: #B9B6AE;
-  --tier-middle-hover: #ABA79E;
-  --tier-apex: #3B4048;
-  --tier-apex-hover: #30353C;
+  --rule: #E2D9CA;
+  --header-rule: rgb(184 145 90 / 0.55);
 
   /* layout */
-  --content-max: 1200px;
+  --content-max: 1240px;
   --gutter: clamp(20px, 4vw, 48px);
 
   /* motion */
   --dur: 220ms;
   --ease: cubic-bezier(.2, .7, .2, 1);
 
-  /* type */
+  /* type — two families: Lora for everything, Cinzel for the QME accent */
   --display: "Cinzel Variable", "Cinzel Fallback", "Cinzel Fallback Times", Georgia, "Times New Roman", serif;
   --text: "Lora Variable", "Lora Fallback", "Lora Fallback Times", Georgia, "Times New Roman", serif;
 
-  --fs-h1: clamp(1.9375rem, 1.12rem + 2.6vw, 3.4rem);
-  --fs-h2: clamp(1.625rem, 1.25rem + 1.05vw, 2.375rem);
-  --fs-h3: clamp(1.25rem, 1.12rem + 0.42vw, 1.5rem);
-  --fs-subhead: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
-  --fs-epigraph: clamp(1.125rem, 1.05rem + 0.3vw, 1.3125rem);
+  --fs-h1: clamp(2.25rem, 1.05rem + 3.6vw, 4.25rem);
+  --fs-h2: clamp(1.875rem, 1.4rem + 1.2vw, 2.625rem);
+  --fs-subhead: clamp(1.0625rem, 1rem + 0.35vw, 1.3125rem);
+  --fs-quote: clamp(1.125rem, 1.05rem + 0.3vw, 1.3125rem);
   --fs-benefit: 1.0625rem;
   --fs-body: 1rem;
-  --fs-cta: 1rem;
   --fs-small: 0.9375rem;
 }

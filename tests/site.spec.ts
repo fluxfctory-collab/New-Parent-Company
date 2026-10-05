@@ -2,13 +2,15 @@ import { mkdirSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { content } from "../src/content";
+import { PYRAMID } from "../src/components/pyramidGeometry";
 
 /*
- * Verification suite for the gateway page (brief §10, Phase 6). Outbound navigation
- * is intercepted, so nothing here depends on the network.
+ * Verification suite for the gateway page. Outbound navigation is intercepted, so nothing
+ * here depends on the network.
  */
 
-const SERVICE_URLS = content.services.map((s) => s.href);
+const SERVICE_URLS = content.services.map((s) => s.href); // apex-first: CS, MA, Merlin
+const IDS = content.services.map((s) => s.id);
 const EXTERNAL = new RegExp(
   "^https://www\\.(merlin\\.law|guardianadvisory\\.group|guardiancivil\\.services|theguardian\\.group)/",
 );
@@ -70,6 +72,13 @@ const AUTHORING_LABELS = [
   "Line beneath it",
 ];
 
+/** Measured tier outlines (pixels of the 1312 × 1199 artwork), as in pyramidGeometry.ts. */
+const OUTLINE_PX = {
+  "civil-services": { top: 72, bottom: 502, left: 408.6, right: 899.2 },
+  "medical-advisory": { top: 517, bottom: 806, left: 244, right: 1064.1 },
+  merlin: { top: 823, bottom: 1138, left: 54.7, right: 1252.6 },
+} as const;
+
 test.describe("1 · exact copy", () => {
   test("every manifest string is on the page, verbatim", async ({ page }) => {
     await open(page);
@@ -77,6 +86,9 @@ test.describe("1 · exact copy", () => {
     for (const s of COPY) expect(text, `missing: ${s}`).toContain(s);
     expect(await page.title()).toBe(content.meta.title);
     expect(await page.locator('meta[name="description"]').getAttribute("content")).toBe(content.meta.description);
+    // The headline reads as one sentence, with only "medical insight" set apart.
+    expect(normalise(await page.locator("h1").innerText())).toBe(content.hero.headline);
+    await expect(page.locator(".hero__em")).toHaveText("medical insight");
   });
 
   test("alternate wordings and authoring labels are absent", async ({ page }) => {
@@ -96,23 +108,24 @@ test.describe("1 · exact copy", () => {
     expect(transformed).toEqual([]);
     const html = await page.content();
     expect(html).toContain("— Francis Bacon");
-    expect(html).toContain("Medical Intelligence Services — record analysis");
+    expect(html).toContain("Services —</span> record analysis");
     expect((html.match(/→/g) ?? []).length).toBe(3);
   });
 
-  test("one h1, selector h2, company names as h3; landmarks and lang", async ({ page }) => {
+  test("semantics: one h1, the h2, a logo heading per company; landmarks and lang", async ({ page }) => {
     await open(page);
     await expect(page.locator("h1")).toHaveCount(1);
-    await expect(page.locator("h1")).toHaveText(content.hero.headline);
     await expect(page.locator("h2")).toHaveText([content.selector.heading]);
-    await expect(page.locator("h3")).toHaveText(content.services.map((s) => s.name));
+    const h3 = page.getByRole("heading", { level: 3 });
+    await expect(h3).toHaveCount(3);
+    for (const [i, s] of content.services.entries()) await expect(h3.nth(i)).toHaveAccessibleName(s.name);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.locator("body > header, body > main, body > footer")).toHaveCount(3);
     await expect(page.locator("main > section")).toHaveCount(2);
   });
 });
 
-test.describe("2 · links", () => {
+test.describe("2 · links and destinations", () => {
   test("exactly the expected destinations, same-tab", async ({ page }) => {
     await open(page);
     const hrefs = await page.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
@@ -120,69 +133,92 @@ test.describe("2 · links", () => {
     await expect(page.locator("a[target]")).toHaveCount(0);
   });
 
-  test("service anchors map to their companies, foundation-first in the DOM", async ({ page }) => {
+  test("each company has a tier link, a text link and a footer link to its own site", async ({ page }) => {
     await open(page);
-    const services = page.locator(".selector a.service");
-    await expect(services).toHaveCount(3);
-    expect(await services.evaluateAll((as) => as.map((a) => a.getAttribute("href")))).toEqual(SERVICE_URLS);
     for (const s of content.services) {
-      const a = page.locator(`.selector a.service[href="${s.href}"]`);
-      await expect(a.locator("h3")).toHaveText(s.name);
-      await expect(a.locator(".service__cta")).toHaveText(s.cta);
-      // The CTA is a span inside the one anchor — no nested interactive elements.
-      await expect(a.locator("a, button")).toHaveCount(0);
+      await expect(page.locator(`.tier-link--${s.id}`)).toHaveAttribute("href", s.href);
+      await expect(page.locator(`.callout--${s.id} .callout__cta`)).toHaveAttribute("href", s.href);
+      await expect(page.locator(".site-footer a", { hasText: s.name })).toHaveAttribute("href", s.href);
     }
+    // No nested links anywhere.
+    await expect(page.locator("a a")).toHaveCount(0);
+    // Footer order as supplied.
+    await expect(page.locator(".site-footer__links a")).toHaveText(["Merlin", "Guardian Medical Advisory", "Guardian Civil Services"]);
   });
 
-  test("QME goes to the legacy site and sits outside the selector", async ({ page }) => {
+  test("QME goes to the legacy site, sits in the header and nowhere in the selector", async ({ page }) => {
     await open(page);
     const qme = page.locator(`a[href="${content.qme.href}"]`);
     await expect(qme).toHaveCount(1);
     await expect(qme).toHaveText(content.qme.label);
-    await expect(page.locator(`.selector a[href="${content.qme.href}"], .selector-overview a`)).toHaveCount(0);
     await expect(page.locator(`header a[href="${content.qme.href}"]`)).toHaveCount(1);
+    await expect(page.locator(`.selector-section a[href="${content.qme.href}"]`)).toHaveCount(0);
   });
 });
 
-test.describe("3 · click targets", () => {
-  // Centroids inside a 600×100 band: triangle → 2/3 down; trapezoids from the area formula.
-  const CENTROID_Y: Record<string, number> = { apex: 2 / 3, middle: 1 - 800 / 1800, foundation: 1 - 1400 / 3000 };
+test.describe("3 · activation", () => {
+  // Points well inside each tier's outline (triangle: 2/3 down; trapezoids: 55 % down).
+  const inside = (id: keyof typeof OUTLINE_PX) => {
+    const o = OUTLINE_PX[id];
+    const t = id === "civil-services" ? 2 / 3 : 0.55;
+    return { x: 0.5, y: (o.top + (o.bottom - o.top) * t) / PYRAMID.height };
+  };
 
-  for (const s of content.services) {
-    test(`desktop: tier centroid and text row both open ${s.href}`, async ({ page }) => {
-      await open(page, 1440, 1300);
-      const row = page.locator(`a.service--${s.tier}`);
-      const tier = await row.locator(".service__tier").boundingBox();
-      if (!tier) throw new Error("no tier box");
-      await page.mouse.click(tier.x + tier.width / 2, tier.y + tier.height * CENTROID_Y[s.tier]);
-      await page.waitForURL(s.href);
-      await page.goto("/");
-      const text = await row.locator(".service__text").boundingBox();
-      if (!text) throw new Error("no text box");
-      await page.mouse.click(text.x + text.width / 2, text.y + text.height / 2);
-      await page.waitForURL(s.href);
-    });
-
-    test(`mobile 390: row centre opens ${s.href}`, async ({ page }) => {
-      await open(page, 390, 844);
-      const row = page.locator(`a.service--${s.tier}`);
-      await row.scrollIntoViewIfNeeded();
-      const box = await row.boundingBox();
-      if (!box) throw new Error("no row box");
-      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-      await page.waitForURL(s.href);
-    });
+  for (const width of [1440, 390]) {
+    for (const s of content.services) {
+      test(`${width}: the ${s.tier} tier and the text link both open ${s.href}`, async ({ page }) => {
+        await open(page, width, 1000);
+        const img = page.locator(".pyramid__image");
+        await img.scrollIntoViewIfNeeded();
+        const box = (await img.boundingBox())!;
+        const c = inside(s.id);
+        await page.mouse.click(box.x + box.width * c.x, box.y + box.height * c.y);
+        await page.waitForURL(s.href);
+        await page.goto("/");
+        const cta = page.locator(`.callout--${s.id} .callout__cta`);
+        await cta.scrollIntoViewIfNeeded();
+        await cta.click();
+        await page.waitForURL(s.href);
+      });
+    }
   }
 
-  test("desktop: the paper beside the apex is not a link (hit area follows the shape)", async ({ page }) => {
-    await open(page, 1440, 1300);
-    const tier = await page.locator("a.service--apex .service__tier").boundingBox();
-    if (!tier) throw new Error("no tier box");
-    const hit = await page.evaluate(
-      ([x, y]) => document.elementFromPoint(x, y)?.closest("a")?.getAttribute("href") ?? null,
-      [tier.x + tier.width * 0.1, tier.y + tier.height * 0.5],
-    );
-    expect(hit).toBeNull();
+  test("the gaps between tiers and the transparent padding are not links", async ({ page }) => {
+    await open(page, 1440, 1100);
+    const img = page.locator(".pyramid__image");
+    await img.scrollIntoViewIfNeeded();
+    const box = (await img.boundingBox())!;
+    const probes = [
+      [0.5, (502 + 517) / 2 / PYRAMID.height], // gap apex / middle
+      [0.5, (806 + 823) / 2 / PYRAMID.height], // gap middle / foundation
+      [0.2, 0.25], // beside the apex
+      [0.5, 0.02], // padding above the tip
+    ];
+    for (const [fx, fy] of probes) {
+      const hit = await page.evaluate(
+        ([x, y]) => document.elementFromPoint(x, y)?.closest("a")?.getAttribute("href") ?? null,
+        [box.x + box.width * fx, box.y + box.height * fy],
+      );
+      expect(hit, `probe ${fx},${fy}`).toBeNull();
+    }
+  });
+
+  test("tier hit regions sit exactly on the artwork's tiers at every size", async ({ page }) => {
+    for (const width of [1440, 1024, 390]) {
+      await open(page, width, 1000);
+      const img = (await page.locator(".pyramid__image").boundingBox())!;
+      expect(Math.abs(img.width / img.height - PYRAMID.width / PYRAMID.height)).toBeLessThan(0.005); // never stretched
+      for (const id of IDS) {
+        const poly = (await page.locator(`.tier-link--${id} polygon`).boundingBox())!;
+        const o = OUTLINE_PX[id];
+        const sx = img.width / PYRAMID.width;
+        const sy = img.height / PYRAMID.height;
+        expect(Math.abs(poly.x - (img.x + o.left * sx))).toBeLessThan(1.5);
+        expect(Math.abs(poly.x + poly.width - (img.x + o.right * sx))).toBeLessThan(1.5);
+        expect(Math.abs(poly.y - (img.y + o.top * sy))).toBeLessThan(1.5);
+        expect(Math.abs(poly.y + poly.height - (img.y + o.bottom * sy))).toBeLessThan(1.5);
+      }
+    }
   });
 });
 
@@ -190,38 +226,51 @@ test.describe("4 · keyboard", () => {
   test("tab order and a visible focus indicator on every stop", async ({ page }) => {
     await open(page, 1440, 1300);
     mkdirSync("test-results/focus", { recursive: true });
-    const expected = ["#top", content.qme.href, ...SERVICE_URLS, ...SERVICE_URLS];
+    const footer = ["https://www.merlin.law/", "https://www.guardianadvisory.group/", "https://www.guardiancivil.services/"];
+    const expected = ["#top", content.qme.href, ...SERVICE_URLS, ...SERVICE_URLS, ...footer];
     for (const [i, href] of expected.entries()) {
       await page.keyboard.press("Tab");
       const info = await page.evaluate(() => {
-        const el = document.activeElement as HTMLElement;
-        let cs = getComputedStyle(el);
-        // Desktop service rows draw their ring around the hover wash (the panel's ::before).
-        if (el.matches(".service") && cs.outlineStyle === "none") {
-          cs = getComputedStyle(el.querySelector(".service__panel")!, "::before");
-        }
-        return { href: el.getAttribute("href"), style: cs.outlineStyle, width: parseFloat(cs.outlineWidth), color: cs.outlineColor };
+        const el = document.activeElement as Element;
+        const isTier = el.matches(".tier-link");
+        const target = isTier ? el.querySelector("polygon")! : el;
+        const cs = getComputedStyle(target);
+        return {
+          href: el.getAttribute("href"),
+          kind: isTier ? "tier" : "link",
+          outline: cs.outlineStyle,
+          outlineWidth: parseFloat(cs.outlineWidth),
+          stroke: cs.stroke,
+          strokeWidth: parseFloat(cs.strokeWidth),
+        };
       });
       expect(info.href, `tab stop ${i + 1}`).toBe(href);
-      expect(info.style, `outline style at stop ${i + 1}`).toBe("solid");
-      expect(info.width, `outline width at stop ${i + 1}`).toBeGreaterThanOrEqual(2);
-      expect(info.color).toBe("rgb(113, 80, 44)"); // --gold-dark, 6.86 : 1 on the canvas
+      if (info.kind === "tier") {
+        // The ring follows the tier's outline: a charcoal stroke on its polygon.
+        expect(info.stroke).toBe("rgb(29, 35, 38)");
+        expect(info.strokeWidth).toBeGreaterThanOrEqual(2);
+      } else {
+        expect(info.outline, `outline at stop ${i + 1}`).toBe("solid");
+        expect(info.outlineWidth).toBeGreaterThanOrEqual(2);
+      }
       await page.screenshot({ path: `test-results/focus/stop-${i + 1}.png` });
     }
   });
 });
 
 test.describe("5 · accessible names", () => {
-  test("each service link is named by its CTA and company", async ({ page }) => {
+  test("tier links, text links and logos are named for their companies", async ({ page }) => {
     await open(page);
-    await expect(page.locator("a.service--foundation")).toHaveAccessibleName("Explore Merlin");
-    await expect(page.locator("a.service--middle")).toHaveAccessibleName("Guardian Medical Advisory Learn more");
-    await expect(page.locator("a.service--apex")).toHaveAccessibleName("Guardian Civil Services Learn more");
-    for (const s of content.services) {
-      await expect(page.locator(`a.service--${s.tier}`)).toHaveAccessibleDescription(`${s.benefit} ${s.description}`);
-    }
+    await expect(page.locator(".tier-link--civil-services")).toHaveAccessibleName("Guardian Civil Services — top tier of the pyramid");
+    await expect(page.locator(".tier-link--medical-advisory")).toHaveAccessibleName("Guardian Medical Advisory — middle tier of the pyramid");
+    await expect(page.locator(".tier-link--merlin")).toHaveAccessibleName("Merlin — foundation tier of the pyramid");
+    await expect(page.locator(".callout--civil-services .callout__cta")).toHaveAccessibleName("Learn more Guardian Civil Services");
+    await expect(page.locator(".callout--medical-advisory .callout__cta")).toHaveAccessibleName("Learn more Guardian Medical Advisory");
+    await expect(page.locator(".callout--merlin .callout__cta")).toHaveAccessibleName("Explore Merlin");
     await expect(page.getByRole("link", { name: /^QME/ })).toHaveCount(1);
     await expect(page.getByRole("link", { name: content.meta.title })).toHaveCount(1);
+    // The pyramid image itself is decorative: its meaning is in the links and the text.
+    await expect(page.locator(".pyramid__image")).toHaveAttribute("alt", "");
   });
 });
 
@@ -229,15 +278,15 @@ test.describe("6 · overflow", () => {
   const sizes = [
     { width: 1440, height: 900, scale: 1 },
     { width: 1280, height: 800, scale: 1 },
+    { width: 1200, height: 800, scale: 1 },
     { width: 1024, height: 768, scale: 1 },
     { width: 768, height: 1024, scale: 1 },
     { width: 390, height: 844, scale: 1 },
     { width: 360, height: 740, scale: 1 },
     { width: 720, height: 450, scale: 2 }, // 1440×900 at 200 % zoom
-    { width: 640, height: 400, scale: 2 }, // 1280×800 at 200 % zoom
   ];
   for (const { width, height, scale } of sizes) {
-    test(`no horizontal scroll at ${width}×${height} @${scale}x`, async ({ browser }) => {
+    test(`no horizontal scroll or clipping at ${width}×${height} @${scale}x`, async ({ browser }) => {
       const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: scale });
       const page = await context.newPage();
       await interceptOutbound(page);
@@ -245,11 +294,13 @@ test.describe("6 · overflow", () => {
       await page.evaluate(() => document.fonts.ready);
       const { sw, iw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth }));
       expect(sw).toBeLessThanOrEqual(iw);
-      // Nothing is clipped: every text block sits inside the viewport.
       const outside = await page.evaluate(() =>
-        [...document.querySelectorAll("h1, h2, h3, p, figcaption, a")]
-          .filter((el) => { const r = el.getBoundingClientRect(); return r.left < -0.5 || r.right > window.innerWidth + 0.5; })
-          .map((el) => el.textContent?.slice(0, 40)),
+        [...document.querySelectorAll("h1, h2, h3, p, figcaption, a, img")]
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && (r.left < -0.5 || r.right > window.innerWidth + 0.5);
+          })
+          .map((el) => el.outerHTML.slice(0, 60)),
       );
       expect(outside).toEqual([]);
       await context.close();
@@ -272,84 +323,66 @@ test.describe("7 · touch targets", () => {
   }
 });
 
-test.describe("8 · reduced motion", () => {
-  test("no running animations and everything at full opacity", async ({ browser }) => {
+test.describe("8 · motion", () => {
+  test("reduced motion: nothing animates and all content is fully visible", async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
     await interceptOutbound(page);
     await page.goto("/");
-    const running = await page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running").length);
-    expect(running).toBe(0);
+    expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
     const faded = await page.evaluate(() =>
       [...document.querySelectorAll("body *")]
-        .filter((el) => !el.matches(".tier-shape__ring")) // hover/focus-only gold ring
+        .filter((el) => !el.closest("[aria-hidden='true']")) // decorative layers and connectors
         .filter((el) => parseFloat(getComputedStyle(el).opacity) < 1)
         .map((el) => el.tagName),
     );
     expect(faded).toEqual([]);
-    // The static gold still reads as metal: the gradient surface stays; the sweep is simply absent.
-    const qme = await page.locator("header .qme").evaluate((el) => ({
-      bg: getComputedStyle(el).backgroundImage,
-      sweep: getComputedStyle(el, "::before").opacity,
-    }));
-    expect(qme.bg).toContain("linear-gradient");
-    expect(qme.sweep).toBe("0");
-    // Hover moves nothing: the arrow keeps its place.
-    await page.locator("a.service--middle .service__text").hover();
-    const transform = await page.locator("a.service--middle .service__arrow").evaluate((el) => getComputedStyle(el).transform);
-    expect(transform).toBe("none");
+    await page.locator(".callout--medical-advisory .callout__cta").hover();
+    expect(await page.locator(".callout--medical-advisory .callout__arrow").evaluate((el) => getComputedStyle(el).transform)).toBe("none");
     await context.close();
   });
 
-  test("with motion allowed: one entrance, one QME sweep, nothing loops", async ({ browser }) => {
+  test("motion allowed: one slow light drift (12–18 s, transform/opacity) and one glint", async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: "no-preference", viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
     await interceptOutbound(page);
     await page.goto("/");
-    const animations = await page.evaluate(() =>
+    const anims = await page.evaluate(() =>
       document.getAnimations().map((a) => {
-        const t = a.effect?.getComputedTiming();
-        return { name: (a as CSSAnimation).animationName, iterations: t?.iterations, end: Number(t?.endTime) };
+        const effect = a.effect as KeyframeEffect;
+        const t = effect.getComputedTiming();
+        const props = new Set(
+          effect.getKeyframes().flatMap((k) => Object.keys(k).filter((p) => !["offset", "computedOffset", "easing", "composite"].includes(p))),
+        );
+        return {
+          name: (a as CSSAnimation).animationName,
+          target: (effect.target as Element).className,
+          iterations: t.iterations,
+          duration: Number(t.duration),
+          props: [...props],
+        };
       }),
     );
-    const settle = animations.filter((a) => a.name === "tier-settle");
-    const sweep = animations.filter((a) => a.name === "metal-sweep");
-    expect(settle.length).toBe(3);
-    for (const a of settle) expect(a.end).toBeLessThanOrEqual(400);
-    expect(sweep.length).toBe(1); // the QME's single sweep on first display
-    expect(animations.length).toBe(4);
-    for (const a of animations) expect(a.iterations).toBe(1);
-    await page.waitForTimeout(500);
-    const opacities = await page.locator(".service__tier svg").evaluateAll((els) => els.map((el) => getComputedStyle(el).opacity));
-    expect(opacities).toEqual(["1", "1", "1"]);
+    const drift = anims.filter((a) => a.name === "hero-drift");
+    expect(drift).toHaveLength(1);
+    expect(drift[0].target).toContain("hero__glow");
+    expect(drift[0].duration).toBeGreaterThanOrEqual(12000);
+    expect(drift[0].duration).toBeLessThanOrEqual(18000);
+    expect(new Set(drift[0].props)).toEqual(new Set(["opacity", "transform"]));
+    const glint = anims.filter((a) => a.name === "em-glint");
+    expect(glint).toHaveLength(1);
+    expect(glint[0].iterations).toBe(1);
+    expect(anims).toHaveLength(2); // nothing else moves
     await context.close();
   });
 
-  test("QME sweep: clipped, never intercepts the pointer, replays on hover and focus", async ({ browser }) => {
-    const context = await browser.newContext({ reducedMotion: "no-preference", viewport: { width: 1440, height: 900 } });
-    const page = await context.newPage();
-    await interceptOutbound(page);
-    await page.goto("/");
-    const qme = page.locator("header .qme");
-    const styles = await qme.evaluate((el) => ({
-      overflow: getComputedStyle(el).overflow,
-      before: getComputedStyle(el, "::before").pointerEvents,
-      after: getComputedStyle(el, "::after").pointerEvents,
-    }));
-    expect(styles).toEqual({ overflow: "hidden", before: "none", after: "none" });
-    const sweeps = () => page.evaluate(() => document.getAnimations().filter((a) => (a as CSSAnimation).animationName === "metal-sweep").length);
-    await page.waitForTimeout(2600); // the load sweep has finished
-    await qme.hover();
-    expect(await sweeps()).toBe(2); // load sweep (finished, filled) + hover sweep
-    await page.mouse.move(10, 600);
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab"); // focus QME
-    expect(await page.evaluate(() => document.activeElement?.className)).toContain("qme");
-    expect(await sweeps()).toBe(2); // focus replays the same ::after sweep
-    // Clicking the label still navigates (the overlay never blocks the link).
-    await qme.click();
-    await page.waitForURL(content.qme.href);
-    await context.close();
+  test("hero background layers are decorative and never intercept the pointer", async ({ page }) => {
+    await open(page);
+    const layers = await page.locator(".hero__atmosphere, .hero__atmosphere > *").evaluateAll((els) =>
+      els.map((el) => ({ pe: getComputedStyle(el).pointerEvents, hidden: !!el.closest("[aria-hidden='true']") })),
+    );
+    expect(layers.length).toBe(5);
+    for (const l of layers) expect(l).toEqual({ pe: "none", hidden: true });
   });
 });
 
@@ -372,18 +405,32 @@ test.describe("9 · no JavaScript", () => {
   });
 });
 
-test.describe("10 · first viewport", () => {
-  test("at 1440×900 the selector heading and the apex are above the fold", async ({ page }) => {
-    await open(page, 1440, 900);
-    const h2 = await page.locator("h2").boundingBox();
-    const apex = await page.locator("a.service--apex .service__tier").boundingBox();
-    expect(h2!.y).toBeLessThan(900);
-    expect(apex!.y).toBeLessThan(900);
+test.describe("10 · header", () => {
+  test("light header: ivory, bronze rule, unfiltered original logo, outlined QME", async ({ page }) => {
+    for (const [width, min, max] of [[1440, 88, 104], [390, 70, 80]] as const) {
+      await open(page, width, 900);
+      const header = page.locator(".site-header");
+      const box = (await header.boundingBox())!;
+      expect(box.height).toBeGreaterThanOrEqual(min);
+      expect(box.height).toBeLessThanOrEqual(max);
+      const s = await header.evaluate((el) => ({ bg: getComputedStyle(el).backgroundColor, border: getComputedStyle(el).borderBottomColor }));
+      expect(s.bg).toBe("rgb(247, 244, 238)");
+      expect(s.border).toBe("rgba(184, 145, 90, 0.55)");
+      expect(await page.locator(".site-header__logo img").evaluate((img) => getComputedStyle(img).filter)).toBe("none");
+      const qme = await page.locator("header .qme").evaluate((el) => ({
+        border: getComputedStyle(el).borderTopColor,
+        color: getComputedStyle(el).color,
+        font: getComputedStyle(el).fontFamily,
+      }));
+      expect(qme.border).toBe("rgb(184, 145, 90)");
+      expect(qme.color).toBe("rgb(36, 38, 41)");
+      expect(qme.font).toMatch(/^"Cinzel Variable"/);
+    }
   });
 });
 
 test.describe("11 · images", () => {
-  test("logos load, carry width/height, keep their ratio and cause no layout shift", async ({ page }) => {
+  test("logos and the pyramid load, keep their proportions and cause no layout shift", async ({ page }) => {
     await page.addInitScript(() => {
       (window as unknown as { __cls: number }).__cls = 0;
       new PerformanceObserver((list) => {
@@ -399,30 +446,33 @@ test.describe("11 · images", () => {
       (els as HTMLImageElement[]).map((img) => ({
         src: img.currentSrc,
         ok: img.complete && img.naturalWidth > 0,
-        w: img.getAttribute("width"),
-        h: img.getAttribute("height"),
         attrRatio: Number(img.getAttribute("width")) / Number(img.getAttribute("height")),
+        naturalRatio: img.naturalWidth / img.naturalHeight,
         renderRatio: img.getBoundingClientRect().width / img.getBoundingClientRect().height,
-        decoding: img.getAttribute("decoding"),
-        loading: img.getAttribute("loading"),
+        fit: getComputedStyle(img).objectFit,
       })),
     );
-    expect(imgs.length).toBe(5);
+    expect(imgs.length).toBe(6); // header + three company logos + footer + pyramid
     for (const img of imgs) {
       expect(img.ok, img.src).toBe(true);
-      expect(img.w && img.h, img.src).toBeTruthy();
-      expect(Math.abs(img.attrRatio - img.renderRatio)).toBeLessThan(0.02);
-      expect(img.decoding).toBe("async");
+      expect(Math.abs(img.attrRatio - img.renderRatio), img.src).toBeLessThan(0.02);
+      expect(Math.abs(img.naturalRatio - img.renderRatio), img.src).toBeLessThan(0.02);
       expect(img.src).toMatch(/\.webp$/);
     }
-    expect(imgs[0].loading).not.toBe("lazy"); // header logo
+    expect(imgs.find((i) => i.src.includes("guardian-pyramid"))!.fit).toBe("contain");
     const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
     expect(cls).toBeLessThan(0.01);
+  });
+
+  test("the supplied pyramid file is served as-is", async ({ request }) => {
+    const res = await request.get("/images/guardian-pyramid.png");
+    expect(res.status()).toBe(200);
+    expect(res.headers()["content-type"]).toContain("image/png");
   });
 });
 
 test.describe("12 · axe", () => {
-  for (const width of [1440, 390]) {
+  for (const width of [1440, 1024, 390]) {
     test(`no serious or critical violations at ${width}`, async ({ page }) => {
       await open(page, width, 900);
       const results = await new AxeBuilder({ page }).analyze();
@@ -432,94 +482,124 @@ test.describe("12 · axe", () => {
   }
 });
 
-test.describe("pyramid geometry", () => {
-  for (const width of [1440, 1280, 1024]) {
-    test(`three continuous levels, exact connectors, aligned copy at ${width}`, async ({ page }) => {
-      await open(page, width, 1000);
-      const { sel, rows: g } = await page.evaluate(() => {
-        const selBox = document.querySelector(".selector")!.getBoundingClientRect();
-        const rows = ["apex", "middle", "foundation"].map((t) => {
-          const a = document.querySelector(`a.service--${t}`)!;
-          const tier = a.querySelector(".service__tier")!.getBoundingClientRect();
-          const connEl = a.querySelector(".service__connector")!;
-          const line = getComputedStyle(connEl, "::before");
-          const conn = connEl.getBoundingClientRect();
-          const row = a.getBoundingClientRect();
-          const logo = a.querySelector(".service__logo img")!.getBoundingClientRect();
-          const copy = a.querySelector(".service__benefit")!.getBoundingClientRect();
-          const name = a.querySelector(".service__name")!.getBoundingClientRect();
-          return {
-            top: tier.top, bottom: tier.bottom, width: tier.width, left: tier.left,
-            rowMid: (row.top + row.bottom) / 2,
-            lineY: conn.top + parseFloat(line.top) + parseFloat(line.height) / 2, lineLeft: conn.left,
-            logoMid: logo.top + logo.height / 2, logoLeft: logo.left, copyLeft: copy.left, nameLeft: name.left,
-          };
-        });
-        return { sel: { top: selBox.top, bottom: selBox.bottom }, rows };
+test.describe("selector composition", () => {
+  test("desktop: Medical Advisory left, Civil Services upper right, Merlin lower right; connectors exact", async ({ page }) => {
+    for (const width of [1440, 1280, 1200]) {
+      await open(page, width, 1100);
+      const g = await page.evaluate(() => {
+        const img = document.querySelector(".pyramid__image")!.getBoundingClientRect();
+        const rect = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+        return {
+          img: { x: img.x, y: img.y, w: img.width, h: img.height },
+          statementTop: rect(".selector__statement").top,
+          rows: ["civil-services", "medical-advisory", "merlin"].map((id) => {
+            const c = rect(`.connector--${id}`);
+            const callout = rect(`.callout--${id}`);
+            const logo = rect(`.callout--${id} .callout__logo img`);
+            return {
+              id,
+              display: getComputedStyle(document.querySelector(`.connector--${id}`)!).display,
+              c: { l: c.left, r: c.right, y: c.top + c.height / 2 },
+              callout: { l: callout.left, r: callout.right, t: callout.top, b: callout.bottom },
+              logoMid: logo.top + logo.height / 2,
+            };
+          }),
+        };
       });
-      const [apex, middle, foundation] = g;
-      // Three equal levels, no gaps, same width and x: one continuous triangle.
-      expect(Math.abs(apex.bottom - apex.top - (middle.bottom - middle.top))).toBeLessThan(0.5);
-      expect(Math.abs(middle.bottom - middle.top - (foundation.bottom - foundation.top))).toBeLessThan(0.5);
-      expect(Math.abs(apex.bottom - middle.top)).toBeLessThan(0.5);
-      expect(Math.abs(middle.bottom - foundation.top)).toBeLessThan(0.5);
-      expect(new Set(g.map((r) => Math.round(r.width))).size).toBe(1);
-      expect(new Set(g.map((r) => Math.round(r.left))).size).toBe(1);
-      // Centred on the rows, and proportioned like the client diagram.
-      const H = foundation.bottom - apex.top;
-      expect(Math.abs(apex.top - sel.top - (sel.bottom - foundation.bottom))).toBeLessThan(1);
-      expect(apex.width / H).toBeGreaterThan(width >= 1280 ? 1.0 : 0.85);
-      for (const r of g) {
-        // Connector at the row's vertical middle, landing on its own level…
-        expect(Math.abs(r.lineY - r.rowMid)).toBeLessThan(1);
-        expect(r.lineY).toBeGreaterThan(r.top);
-        expect(r.lineY).toBeLessThan(r.bottom);
-        // …starting exactly at the level's right edge (2 px tucked under it).
-        const edgeX = apex.left + apex.width * (0.5 + 0.5 * ((r.lineY - apex.top) / H));
-        expect(Math.abs(r.lineLeft - (edgeX - 2))).toBeLessThan(1.5);
-      }
-      // Copy shares one left edge; so do the company names.
-      expect(new Set(g.map((r) => Math.round(r.copyLeft))).size).toBe(1);
-      expect(new Set(g.map((r) => Math.round(r.nameLeft))).size).toBe(1);
-      if (width >= 1280) {
-        // Logo column: the connector runs into each logo's vertical centre.
-        for (const r of g) expect(Math.abs(r.lineY - r.logoMid)).toBeLessThan(1.5);
-        expect(new Set(g.map((r) => Math.round(r.logoLeft))).size).toBe(1);
-      }
-    });
-  }
-
-  test("desktop stacks the DOM order bottom-to-top", async ({ page }) => {
-    await open(page, 1440, 1000);
-    const ys = await page.locator("a.service").evaluateAll((as) => as.map((a) => a.getBoundingClientRect().top));
-    expect(ys[0]).toBeGreaterThan(ys[1]);
-    expect(ys[1]).toBeGreaterThan(ys[2]);
+      const [cs, ma, me] = g.rows;
+      // Placement around the pyramid.
+      expect(ma.callout.r).toBeLessThan(g.img.x);
+      expect(cs.callout.l).toBeGreaterThan(g.img.x + g.img.w);
+      expect(me.callout.l).toBeGreaterThan(g.img.x + g.img.w);
+      expect(cs.callout.b).toBeLessThan(me.callout.t);
+      // Connector heights = tier mid-heights = logo centres.
+      const mid = (top: number, bottom: number) => g.img.y + ((top + bottom) / 2 / PYRAMID.height) * g.img.h;
+      const expectedY = [mid(72, 502), mid(517, 806), mid(823, 1138)];
+      g.rows.forEach((r, i) => {
+        expect(r.display).toBe("block");
+        expect(Math.abs(r.c.y - expectedY[i]), `${r.id} connector height`).toBeLessThan(1.5);
+        expect(Math.abs(r.logoMid - r.c.y), `${r.id} logo on connector`).toBeLessThan(1.5);
+      });
+      // Connector ends: 10 px off the tier's edge, 12 px short of the description.
+      const sx = g.img.w / PYRAMID.width;
+      const edge = (x0: number, x1: number) => g.img.x + ((x0 + x1) / 2) * sx; // edge x at mid-height
+      expect(Math.abs(cs.c.l - (edge(656, 899.2) + 10))).toBeLessThan(1.5);
+      expect(Math.abs(me.c.l - (edge(1073, 1252.6) + 10))).toBeLessThan(1.5);
+      expect(Math.abs(ma.c.r - (edge(404.9, 244) - 10))).toBeLessThan(1.5);
+      expect(Math.abs(cs.c.r - (cs.callout.l - 12))).toBeLessThan(1.5);
+      expect(Math.abs(me.c.r - (me.callout.l - 12))).toBeLessThan(1.5);
+      expect(Math.abs(ma.c.l - (ma.callout.r + 12))).toBeLessThan(1.5);
+      // The statement clears every description.
+      for (const r of g.rows) expect(g.statementTop).toBeGreaterThan(r.callout.b + 24);
+    }
   });
 
-  test("hover emphasises the level, its connector and its CTA together", async ({ page }) => {
-    await open(page, 1440, 1000);
-    const state = () =>
-      page.locator("a.service--middle").evaluate((a) => ({
-        ring: getComputedStyle(a.querySelector(".tier-shape__ring")!).opacity,
-        connector: getComputedStyle(a.querySelector(".service__connector")!, "::after").opacity,
-        underline: getComputedStyle(a.querySelector(".service__cta-label")!).backgroundSize,
-        arrow: getComputedStyle(a.querySelector(".service__arrow")!).transform,
-      }));
-    const rest = await state();
-    expect(rest.ring).toBe("0");
-    expect(rest.connector).toBe("0");
-    await page.locator("a.service--middle .service__tier polygon").first().hover({ force: true });
-    await page.waitForTimeout(400);
-    const hovered = await state();
-    expect(hovered.ring).toBe("1");
-    expect(hovered.connector).toBe("1");
-    expect(hovered.underline).toBe("100% 2px");
-    expect(hovered.arrow).not.toBe("none");
+  test("tablet and mobile: connectors hidden, descriptions below the pyramid, top tier first", async ({ page }) => {
+    for (const width of [1024, 768, 390]) {
+      await open(page, width, 1000);
+      const r = await page.evaluate(() => {
+        const img = document.querySelector(".pyramid__image")!.getBoundingClientRect();
+        return {
+          imgBottom: img.bottom,
+          imgCentre: img.left + img.width / 2,
+          vw: document.documentElement.clientWidth,
+          connectors: [...document.querySelectorAll(".connector")].map((c) => getComputedStyle(c).display),
+          callouts: [...document.querySelectorAll(".callout")].map((c) => {
+            const b = c.getBoundingClientRect();
+            return { id: [...c.classList].find((k) => /^callout--(?!left|right)/.test(k))!.slice(9), top: b.top };
+          }),
+        };
+      });
+      expect(new Set(r.connectors)).toEqual(new Set(["none"]));
+      expect(Math.abs(r.imgCentre - r.vw / 2)).toBeLessThan(2);
+      for (const c of r.callouts) expect(c.top).toBeGreaterThan(r.imgBottom);
+      expect(r.callouts.map((c) => c.id)).toEqual(IDS);
+      if (width < 960) {
+        expect(r.callouts[0].top).toBeLessThan(r.callouts[1].top);
+        expect(r.callouts[1].top).toBeLessThan(r.callouts[2].top);
+      }
+    }
+  });
+
+  test("hover and focus associate a tier, its connector and its description", async ({ page }) => {
+    await open(page, 1440, 1100);
+    const state = (id: string) =>
+      page.evaluate(
+        (id) => ({
+          connector: getComputedStyle(document.querySelector(`.connector--${id}`)!).backgroundColor,
+          underline: getComputedStyle(document.querySelector(`.callout--${id} .callout__cta-label`)!).backgroundSize,
+          tierFill: getComputedStyle(document.querySelector(`.tier-link--${id} polygon`)!).fill,
+        }),
+        id,
+      );
+    const rest = await state("civil-services");
+    expect(rest.connector).toBe("rgb(184, 145, 90)");
+    expect(rest.underline).toBe("100% 1px");
+    const img = page.locator(".pyramid__image");
+    await img.scrollIntoViewIfNeeded();
+    const box = (await img.boundingBox())!;
+    // Pointing at the tier lights its connector and its description's link.
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.3);
+    await page.waitForTimeout(350);
+    const viaTier = await state("civil-services");
+    expect(viaTier.connector).toBe("rgb(138, 100, 56)");
+    expect(viaTier.underline).toBe("100% 2px");
+    // Pointing at a description lights its tier and its connector.
+    await page.locator(".callout--medical-advisory .callout__description").hover();
+    await page.waitForTimeout(350);
+    const viaText = await state("medical-advisory");
+    expect(viaText.connector).toBe("rgb(138, 100, 56)");
+    expect(viaText.tierFill).not.toBe(rest.tierFill);
+    // Keyboard focus on a text link does the same.
+    await page.mouse.move(5, 5);
+    await page.locator(".callout--merlin .callout__cta").focus();
+    await page.waitForTimeout(350);
+    expect((await state("merlin")).connector).toBe("rgb(138, 100, 56)");
   });
 });
 
 test.describe("13 · typography and font loading", () => {
-  test("two webfont families: Cinzel for display, Lora for text; all swap", async ({ page }) => {
+  test("two families: Lora for the page, Cinzel only for the QME accent; all swap", async ({ page }) => {
     const fontFiles: string[] = [];
     page.on("request", (r) => {
       if (r.url().endsWith(".woff2")) fontFiles.push(r.url().split("/").pop()!);
@@ -528,36 +608,44 @@ test.describe("13 · typography and font loading", () => {
     const fam = await page.evaluate(() => {
       const first = (sel: string) => getComputedStyle(document.querySelector(sel)!).fontFamily.split(",")[0].replace(/"/g, "").trim();
       return {
-        display: ["h1", "h2", ".service__name", ".qme"].map(first),
-        text: [".hero__subhead", ".epigraph__quote p", ".service__benefit", ".service__description", ".service__cta", ".selector-section__closing", ".site-footer__links a"].map(first),
-        epigraphStyle: getComputedStyle(document.querySelector(".epigraph__quote p")!).fontStyle,
+        lora: ["h1", ".hero__subhead", ".epigraph__quote p", "h2", ".callout__benefit", ".callout__description", ".callout__cta", ".selector__statement", ".site-footer__links a"].map(first),
+        qme: first(".qme"),
+        quoteStyle: getComputedStyle(document.querySelector(".epigraph__quote p")!).fontStyle,
       };
     });
-    expect(new Set(fam.display)).toEqual(new Set(["Cinzel Variable"]));
-    expect(new Set(fam.text)).toEqual(new Set(["Lora Variable"]));
-    expect(fam.epigraphStyle).toBe("italic");
-    // Every downloaded font file is Cinzel or Lora — plus the one-glyph → supplement,
-    // which is declared inside the Lora family (neither family contains U+2192).
+    expect(new Set(fam.lora)).toEqual(new Set(["Lora Variable"]));
+    expect(fam.qme).toBe("Cinzel Variable");
+    expect(fam.quoteStyle).toBe("italic");
     expect(fontFiles.length).toBeGreaterThan(0);
     for (const f of fontFiles) expect(f).toMatch(/^(cinzel|lora)-|^inter-arrow-/);
-    // Every webfont face swaps (text is never invisible while fonts load).
     const displays = await page.evaluate(() => {
       const out: string[] = [];
       for (const sheet of [...document.styleSheets]) {
         for (const rule of [...sheet.cssRules]) {
-          if (rule instanceof CSSFontFaceRule && rule.style.getPropertyValue("src").includes("url(")) {
-            out.push(rule.style.getPropertyValue("font-display"));
-          }
+          if (rule instanceof CSSFontFaceRule && rule.style.getPropertyValue("src").includes("url(")) out.push(rule.style.getPropertyValue("font-display"));
         }
       }
       return out;
     });
-    expect(displays.length).toBeGreaterThan(0);
     expect(new Set(displays)).toEqual(new Set(["swap"]));
-    // The two latin files every visit needs are preloaded.
     const preloads = await page.locator('link[rel="preload"][as="font"]').evaluateAll((ls) => ls.map((l) => l.getAttribute("href")));
-    expect(preloads.some((h) => /cinzel-latin-wght-normal/.test(h ?? ""))).toBe(true);
     expect(preloads.some((h) => /lora-latin-wght-normal/.test(h ?? ""))).toBe(true);
+    expect(preloads.some((h) => /lora-latin-wght-italic/.test(h ?? ""))).toBe(true);
+  });
+
+  test("wide desktop headline: two lines, 58–72 px, the second starting with “medical insight”", async ({ page }) => {
+    for (const width of [1440, 1280]) {
+      await open(page, width, 900);
+      const lines = await page.locator(".hero__line").evaluateAll((els) => els.map((el) => el.getClientRects().length));
+      expect(lines).toEqual([1, 1]);
+      const second = await page.locator(".hero__line").nth(1).innerText();
+      expect(second.startsWith("medical insight")).toBe(true);
+      const size = await page.locator("h1").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+      expect(size).toBeGreaterThanOrEqual(58);
+      expect(size).toBeLessThanOrEqual(72);
+      const h1 = (await page.locator("h1").boundingBox())!;
+      expect(Math.round(h1.height / (size * 1.1))).toBe(2);
+    }
   });
 
   test("text shows at once in metric-matched fallbacks; the swap barely moves the layout", async ({ page }) => {
@@ -570,7 +658,6 @@ test.describe("13 · typography and font loading", () => {
       }).observe({ type: "layout-shift", buffered: true });
     });
     await interceptOutbound(page);
-    // Hold every font back for 1.5 s (registered last, so it runs first).
     await page.route(/\.woff2$/, async (route) => {
       await new Promise((r) => setTimeout(r, 1500));
       await route.continue();
@@ -581,24 +668,22 @@ test.describe("13 · typography and font loading", () => {
     const early = await page.evaluate(() => ({
       h1Height: document.querySelector("h1")!.getBoundingClientRect().height,
       h2Top: document.querySelector("h2")!.getBoundingClientRect().top,
-      cinzelReady: document.fonts.check("16px 'Cinzel Variable'"),
+      loraReady: document.fonts.check("16px 'Lora Variable'"),
     }));
-    expect(early.cinzelReady).toBe(false); // the fallback phase really happened…
-    expect(early.h1Height).toBeGreaterThan(0); // …and the text was already on screen
+    expect(early.loraReady).toBe(false);
+    expect(early.h1Height).toBeGreaterThan(0);
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(500);
-    expect(await page.evaluate(() => document.fonts.check("16px 'Cinzel Variable'"))).toBe(true);
     const h2Top = await page.evaluate(() => document.querySelector("h2")!.getBoundingClientRect().top);
     const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
     test.info().annotations.push({ type: "font-swap CLS", description: cls.toFixed(4) });
-    // Without the metric overrides the heading jumps ≈ 63 px and CLS is 0.03–0.08.
     expect(Math.abs(h2Top - early.h2Top)).toBeLessThan(2);
     expect(cls).toBeLessThan(0.01);
   });
 });
 
-test.describe("14 · gold and text contrast", () => {
-  test("gold text and supporting text meet WCAG AA on the canvas", async ({ page }) => {
+test.describe("14 · contrast", () => {
+  test("text and gold accents meet WCAG AA on their actual backgrounds", async ({ page }) => {
     await open(page, 1440, 900);
     const ratios = await page.evaluate(() => {
       const rgb = (c: string) => c.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
@@ -607,23 +692,27 @@ test.describe("14 · gold and text contrast", () => {
           .map((v) => v / 255)
           .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
           .reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
-      const paper = lum([250, 248, 244]); // #FAF8F4
-      const ratio = (sel: string) => {
-        const l = lum(rgb(getComputedStyle(document.querySelector(sel)!).color));
-        const [a, b] = [l, paper].sort((x, y) => y - x);
+      const ratio = (fg: number[], bg: number[]) => {
+        const [a, b] = [lum(fg), lum(bg)].sort((x, y) => y - x);
         return Math.round(((a + 0.05) / (b + 0.05)) * 100) / 100;
       };
+      const color = (sel: string) => rgb(getComputedStyle(document.querySelector(sel)!).color);
+      const ivory = [247, 243, 236];
+      const heroLight = [37, 43, 45]; // #252B2D, the lighter end of the hero gradient
       return {
-        cta: ratio(".service__cta"),
-        description: ratio(".service__description"),
-        subhead: ratio(".hero__subhead"),
-        attribution: ratio(".epigraph__attribution"),
-        closing: ratio(".selector-section__closing"),
-        footer: ratio(".site-footer__links a"),
-        h1: ratio("h1"),
+        cta: ratio(color(".callout__cta"), ivory),
+        description: ratio(color(".callout__description"), ivory),
+        statement: ratio(color(".selector__statement"), ivory),
+        footer: ratio(color(".site-footer__links a"), ivory),
+        qme: ratio(color(".qme"), [247, 244, 238]),
+        headline: ratio(color("h1"), heroLight),
+        subhead: ratio(color(".hero__subhead"), heroLight),
+        quote: ratio(color(".epigraph__quote p"), heroLight),
+        cite: ratio(color(".epigraph__attribution"), heroLight),
+        // "medical insight": the darkest stop of its champagne-to-bronze gradient.
+        emphasisDarkest: ratio([194, 154, 98], heroLight),
       };
     });
     for (const [k, v] of Object.entries(ratios)) expect(v, k).toBeGreaterThanOrEqual(4.5);
-    expect(ratios.cta).toBeGreaterThanOrEqual(6.8); // dark gold #71502C
   });
 });

@@ -26,17 +26,18 @@ export const content = {
     closingLine:
       "Every case rests on the record. Few warrant a specialist. Most sit somewhere in between.la",
   },
-  // Foundation-first order. This is also the DOM / reading / focus order.
+  // Top-to-bottom order of the pyramid (apex first). This is also the DOM, reading,
+  // focus and mobile order: Civil Services → Medical Advisory → Merlin.
   services: [
     {
-      id: "merlin",
-      tier: "foundation",
-      name: "Merlin",
-      benefit: "Physician-grade command of the complete record.",
+      id: "civil-services",
+      tier: "apex",
+      name: "Guardian Civil Services",
+      benefit: "Board-certified specialists who hold up under challenge.",
       description:
-        "The whole production, read and analyzed. Not just a chronology.",
-      cta: "Explore Merlin →",
-      href: "https://www.merlin.law/",
+        "Retained experts for trial cases and independent evaluations.",
+      cta: "Learn more →",
+      href: "https://www.guardiancivil.services/",
     },
     {
       id: "medical-advisory",
@@ -49,14 +50,14 @@ export const content = {
       href: "https://www.guardianadvisory.group/",
     },
     {
-      id: "civil-services",
-      tier: "apex",
-      name: "Guardian Civil Services",
-      benefit: "Board-certified specialists who hold up under challenge.",
+      id: "merlin",
+      tier: "foundation",
+      name: "Merlin",
+      benefit: "Physician-grade command of the complete record.",
       description:
-        "Retained experts for trial cases and independent evaluations.",
-      cta: "Learn more →",
-      href: "https://www.guardiancivil.services/",
+        "The whole production, read and analyzed. Not just a chronology.",
+      cta: "Explore Merlin →",
+      href: "https://www.merlin.law/",
     },
   ],
   qme: { label: "QME", href: "https://www.theguardian.group/" },

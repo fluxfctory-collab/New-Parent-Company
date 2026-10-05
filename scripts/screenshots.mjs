@@ -46,62 +46,53 @@ try {
     await shot("zoom200-640", { width: 640, height: 400, scale: 2 });
   }
   if (!only || only === "states") {
-    const sel = (id) => `a.service[href*="${id}"]`;
-    await shot("hover-medical-advisory-1440", {
-      width: 1440, height: 1200, full: false, reducedMotion: "no-preference",
-      prep: async (p) => {
-        const box = await p.locator(`${sel("guardianadvisory")} .service__panel`).boundingBox();
-        await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-      },
-    });
+    const centreOf = async (p, sel) => {
+      const b = await p.locator(sel).boundingBox();
+      return [b.x + b.width / 2, b.y + b.height * 0.62];
+    };
     await shot("hover-civil-tier-1440", {
       width: 1440, height: 1200, full: false, reducedMotion: "no-preference",
       prep: async (p) => {
-        const box = await p.locator(`${sel("guardiancivil")} .service__tier`).boundingBox();
-        await p.mouse.move(box.x + box.width / 2, box.y + box.height * 0.7);
+        await p.evaluate(() => window.scrollTo(0, document.querySelector(".selector__title").offsetTop - 40));
+        const [x, y] = await centreOf(p, ".tier-link--civil-services polygon");
+        await p.mouse.move(x, y);
       },
     });
-    for (const [name, presses] of [["focus-logo", 1], ["focus-qme", 2], ["focus-merlin", 3], ["focus-civil", 5]]) {
+    await shot("hover-medical-advisory-callout-1440", {
+      width: 1440, height: 1200, full: false, reducedMotion: "no-preference",
+      prep: async (p) => {
+        await p.evaluate(() => window.scrollTo(0, document.querySelector(".selector__title").offsetTop - 40));
+        await p.locator(".callout--medical-advisory .callout__description").hover();
+      },
+    });
+    for (const [name, presses] of [["focus-logo", 1], ["focus-qme", 2], ["focus-tier-civil", 3], ["focus-cta-merlin", 8]]) {
       await shot(`${name}-1440`, {
-        width: 1440, height: 1200, full: false,
-        prep: async (p) => { for (let i = 0; i < presses; i++) await p.keyboard.press("Tab"); },
+        width: 1440, height: 1100, full: false,
+        prep: async (p) => {
+          for (let i = 0; i < presses; i++) await p.keyboard.press("Tab");
+          await p.evaluate(() => {
+            const el = document.activeElement;
+            if (el && el.getBoundingClientRect().top > 700) window.scrollBy(0, el.getBoundingClientRect().top - 420);
+          });
+        },
       });
     }
-    await shot("focus-merlin-390", {
+    await shot("focus-cta-390", {
       width: 390, height: 844, scale: 2, full: false,
       prep: async (p) => {
-        for (let i = 0; i < 3; i++) await p.keyboard.press("Tab");
+        for (let i = 0; i < 6; i++) await p.keyboard.press("Tab");
         await p.evaluate(() => document.activeElement.scrollIntoView({ block: "center" }));
       },
     });
   }
   if (!only || only === "details") {
-    // 2× close-ups of the finishing details.
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1300 }, deviceScaleFactor: 2, reducedMotion: "no-preference" });
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1300 }, deviceScaleFactor: 2, reducedMotion: "reduce" });
     await page.route(/^https?:\/\/(?!localhost)/, (r) => r.abort());
     await page.goto(url);
     await page.evaluate(() => document.fonts.ready);
-    const around = async (sel, pad = 24) => {
-      const b = await page.locator(sel).boundingBox();
-      return { x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad, height: b.height + 2 * pad };
-    };
-    // QME at rest (after the load sweep), then frozen mid-sweep.
-    await page.waitForTimeout(2600);
-    await page.screenshot({ path: path.join(out, `${prefix}-detail-qme-rest.png`), clip: await around("header .qme", 20) });
-    await page.evaluate(() => {
-      const a = document.getAnimations().find((x) => x.animationName === "metal-sweep");
-      a.currentTime = 900 + 1500 * 0.42;
-      a.pause();
-    });
-    await page.screenshot({ path: path.join(out, `${prefix}-detail-qme-sweep.png`), clip: await around("header .qme", 20) });
-    // The pyramid and its connectors, at rest.
-    await page.mouse.move(5, 5);
-    const sel = await page.locator(".selector").boundingBox();
-    await page.screenshot({ path: path.join(out, `${prefix}-detail-pyramid.png`), clip: { x: sel.x - 16, y: sel.y - 8, width: 720, height: sel.height + 16 } });
-    // A service row's CTA on hover.
-    await page.locator("a.service--middle .service__text").hover();
-    await page.waitForTimeout(400);
-    await page.screenshot({ path: path.join(out, `${prefix}-detail-row-hover.png`), clip: await around("a.service--middle .service__panel", 28) });
+    await page.screenshot({ path: path.join(out, `${prefix}-detail-header-hero.png`), clip: { x: 0, y: 0, width: 1440, height: 720 } });
+    const stage = await page.locator(".selector-section").boundingBox();
+    await page.screenshot({ path: path.join(out, `${prefix}-detail-selector.png`), clip: { x: 0, y: stage.y, width: 1440, height: Math.min(1000, stage.height) } });
     await page.close();
   }
 } finally {
