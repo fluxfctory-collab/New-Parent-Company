@@ -6,15 +6,20 @@
  */
 import type { Tier } from "../content";
 
-export const PYRAMID = { width: 1312, height: 1199 } as const;
+export const PYRAMID = { width: 1254, height: 1254 } as const;
 
 type Point = readonly [number, number];
 
-/** Each tier's outline (outer edge of its gold frame), clockwise from the top-left/tip. */
+/**
+ * Each tier's outline (outer edge of its gold frame), clockwise from the top-left/tip.
+ * The artwork is cropped tight at the foundation's bottom corners, so that tier's line
+ * fits end a few pixels outside the image (x −5.6 and 1256), exactly where the frame's
+ * edges would meet.
+ */
 const OUTLINES_PX: Record<Tier, readonly Point[]> = {
-  apex: [[656, 72], [899.2, 502], [408.6, 502]],
-  middle: [[404.9, 517], [906, 517], [1064.1, 806], [244, 806]],
-  foundation: [[235.2, 823], [1073, 823], [1252.6, 1138], [54.7, 1138]],
+  apex: [[627, 67], [918.6, 571], [321.4, 571]],
+  middle: [[328.5, 583], [921.9, 583], [1084.9, 877], [161, 877]],
+  foundation: [[160, 889], [1091.4, 889], [1256, 1190], [-5.6, 1190]],
 };
 
 const norm = ([x, y]: Point): Point => [x / PYRAMID.width, y / PYRAMID.height];

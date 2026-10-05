@@ -106,15 +106,15 @@ a {
   margin-top: 32px;
 }
 
-/* ── Hero: dark charcoal, centred, with soft reflected light behind the words ──── */
+/* ── Hero: near-black, centred, over large embossed angular plates ────────────── */
 .hero {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: linear-gradient(180deg, var(--charcoal) 0%, #20262A 55%, var(--charcoal-2) 100%);
+  background: var(--onyx);
   color: var(--hero-text);
   text-align: center;
-  padding-block: clamp(72px, 3rem + 5vw, 148px) clamp(72px, 3rem + 4.5vw, 136px);
+  padding-block: clamp(80px, 3.5rem + 5vw, 156px) clamp(80px, 3.5rem + 4.5vw, 144px);
 }
 
 .hero__atmosphere,
@@ -128,60 +128,42 @@ a {
   z-index: -1;
 }
 
-/* The dimmer field: warmth at two corners, depth toward the edges, and a soft shadow
-   under the light header so the change of surface feels deliberate. */
-.hero__field {
-  background:
-    linear-gradient(180deg, rgb(0 0 0 / 0.22), rgb(0 0 0 / 0) 110px),
-    radial-gradient(60% 85% at 8% 0%, rgb(184 145 90 / 0.1), transparent 62%),
-    radial-gradient(55% 80% at 94% 105%, rgb(201 164 108 / 0.08), transparent 64%),
-    radial-gradient(120% 95% at 50% 45%, transparent 52%, rgb(6 8 9 / 0.42) 100%);
-}
-
-/* The broad champagne/bronze glow behind "medical insight" — the one animated layer. */
-.hero__glow {
-  inset: auto;
-  left: 44%;
-  top: 46%;
-  width: min(1180px, 140vw);
-  height: min(620px, 120vw);
-  translate: -50% -50%;
-  background: radial-gradient(
-    closest-side,
-    rgb(216 182 126 / 0.2) 0%,
-    rgb(190 150 96 / 0.11) 42%,
-    rgb(184 145 90 / 0.035) 72%,
-    transparent 100%
-  );
-  animation: hero-drift 16s ease-in-out infinite alternate;
-  will-change: transform, opacity;
-}
-
-@keyframes hero-drift {
-  0% {
-    opacity: 0.82;
-    transform: translate3d(-3%, 1.5%, 0) scale(0.97);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(3%, -1.5%, 0) scale(1.04);
-  }
-}
-
-/* Widely spaced contour lines — barely there. */
-.hero__contours {
+.hero__plates {
   width: 100%;
   height: 100%;
-  fill: none;
-  stroke: rgb(232 210 168 / 0.05);
-  stroke-width: 1px;
 }
 
-.hero__contours path {
+/* Plate edges: a fine lit line, strongest at the top; folds and engraved grooves. */
+.hero__edge {
+  fill: none;
+  stroke: url(#hero-edge);
+  stroke-width: 1.2px;
   vector-effect: non-scaling-stroke;
 }
 
-/* Fine grain at ~3 % to soften the gradients. */
+.hero__ridge {
+  stroke: rgb(255 255 255 / 0.05);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.hero__groove {
+  fill: none;
+  stroke: rgb(0 0 0 / 0.55);
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+/* A soft dimming behind the words, depth toward the edges, and a shadow under the
+   light header. */
+.hero__shade {
+  background:
+    radial-gradient(58% 50% at 50% 46%, rgb(0 0 0 / 0.24), rgb(0 0 0 / 0) 100%),
+    linear-gradient(180deg, rgb(0 0 0 / 0.35), rgb(0 0 0 / 0) 120px),
+    radial-gradient(120% 100% at 50% 40%, transparent 50%, rgb(0 0 0 / 0.55) 100%);
+}
+
+/* Fine grain at ~3 % so the dark gradients never band. */
 .hero__grain {
   opacity: 0.03;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -203,18 +185,19 @@ a {
 }
 
 .hero__title {
-  max-width: 18.4em;
+  max-width: 21.5em;
   margin-inline: auto;
   color: var(--hero-text);
+  font-family: var(--display);
   font-size: var(--fs-h1);
-  font-weight: 400;
-  line-height: 1.1;
-  letter-spacing: -0.012em;
+  font-weight: var(--display-weight);
+  line-height: 1.18;
+  letter-spacing: 0.01em;
   text-wrap: balance;
 }
 
-/* "medical insight": champagne to bronze (≥ 4.95 : 1 at its darkest), with one narrow
-   highlight passing across on first display. */
+/* "medical insight": champagne to bronze (its darkest stop ≥ 5.08 : 1 on the lightest
+   pixel behind it), with one narrow highlight passing across on first display. */
 .hero__em {
   color: #D9BC8C;
 }
@@ -223,7 +206,7 @@ a {
   .hero__em {
     background-image:
       linear-gradient(100deg, rgb(255 246 226 / 0) 44%, rgb(255 246 226 / 0.7) 50%, rgb(255 246 226 / 0) 56%),
-      linear-gradient(90deg, #ECD9B3 0%, #DBBC88 45%, #C29A62 100%);
+      linear-gradient(90deg, #ECD9B3 0%, #DBBC88 45%, #C8A06A 100%);
     background-size: 300% 100%, 100% 100%;
     background-position: 100% 0, 0 0;
     background-repeat: no-repeat;
@@ -291,10 +274,11 @@ a {
 
 .selector__title {
   color: var(--ink);
+  font-family: var(--display);
   font-size: var(--fs-h2);
-  font-weight: 400;
-  line-height: 1.2;
-  letter-spacing: -0.005em;
+  font-weight: var(--display-weight);
+  line-height: 1.25;
+  letter-spacing: 0.01em;
   text-align: center;
   text-wrap: balance;
 }
@@ -309,7 +293,7 @@ a {
 }
 
 .stage {
-  --pyr-w: clamp(300px, 46vw, 420px);
+  --pyr-w: clamp(320px, 50vw, 500px);
   margin-top: clamp(40px, 2rem + 2.5vw, 72px);
 }
 
@@ -465,9 +449,9 @@ a {
 /* ── Desktop (≥ 1200): the asymmetric composition with connectors ──────────────── */
 @media (min-width: 1200px) {
   .stage {
-    --pyr-w: clamp(440px, 34vw, 490px);
-    --reach: 52px; /* pyramid box edge → description */
-    --callout-w: min(330px, (100cqi - var(--pyr-w)) / 2 - var(--reach));
+    --pyr-w: clamp(460px, 37.5vw, 540px);
+    --reach: 48px; /* pyramid box edge → description */
+    --callout-w: min(320px, (100cqi - var(--pyr-w)) / 2 - var(--reach));
     position: relative;
     width: var(--pyr-w);
     margin-inline: auto;
@@ -581,7 +565,7 @@ a {
 /* ── Mobile (< 960): one open column, top tier first ──────────────────────────── */
 @media (max-width: 959.98px) {
   .stage {
-    --pyr-w: min(340px, 86vw);
+    --pyr-w: min(420px, 90vw);
   }
 
   .callouts {

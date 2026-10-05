@@ -6,13 +6,14 @@
   --ivory-header: #F7F4EE;   /* header */
   --ivory: #F7F3EC;          /* selector section + footer */
 
-  /* dark hero */
-  --charcoal: #1D2326;
-  --charcoal-2: #252B2D;
-  --hero-text: #F4EFE6;      /* 13.88 : 1 on --charcoal */
-  --hero-text-2: #C9C2B6;    /*  8.99 : 1 on --charcoal — supporting sentence */
-  --hero-quote: #E3D7C2;     /* 11.18 : 1 */
-  --hero-cite: #ADA394;      /*  6.39 : 1 (5.77 on --charcoal-2) */
+  /* dark hero: a near-black ground under lighter plates. Ratios: on --onyx / on the
+     lightest pixel actually behind the text (measured by the test suite, 390–1440 px) */
+  --onyx: #121212;
+  --charcoal: #1D2326;       /* focus ring on the pyramid's tiers */
+  --hero-text: #F4EFE6;      /* 16.36 : 1 / ≥ 9.78 : 1 */
+  --hero-text-2: #C9C2B6;    /* 10.59 : 1 / ≥ 8.12 : 1 — supporting sentence */
+  --hero-quote: #E3D7C2;     /* 13.17 : 1 / ≥ 10.64 : 1 */
+  --hero-cite: #ADA394;      /*  7.53 : 1 / ≥ 5.08 : 1 */
 
   /* ink on ivory */
   --ink: #242629;            /* 13.72 : 1 on --ivory */
@@ -43,12 +44,13 @@
   --dur: 220ms;
   --ease: cubic-bezier(.2, .7, .2, 1);
 
-  /* type — two families: Lora for everything, Cinzel for the QME accent */
+  /* type — two families: Cinzel for the headings and QME, Lora for all other text */
   --display: "Cinzel Variable", "Cinzel Fallback", "Cinzel Fallback Times", Georgia, "Times New Roman", serif;
   --text: "Lora Variable", "Lora Fallback", "Lora Fallback Times", Georgia, "Times New Roman", serif;
 
-  --fs-h1: clamp(2.25rem, 1.05rem + 3.6vw, 4.25rem);
-  --fs-h2: clamp(1.875rem, 1.4rem + 1.2vw, 2.625rem);
+  --display-weight: 560;      /* Cinzel a step above regular */
+  --fs-h1: clamp(1.875rem, 1.05rem + 2.6vw, 3.5rem);
+  --fs-h2: clamp(1.625rem, 1.2rem + 1.1vw, 2.375rem);
   --fs-subhead: clamp(1.0625rem, 1rem + 0.35vw, 1.3125rem);
   --fs-quote: clamp(1.125rem, 1.05rem + 0.3vw, 1.3125rem);
   --fs-benefit: 1.0625rem;

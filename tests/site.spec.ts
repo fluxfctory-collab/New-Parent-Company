@@ -1,5 +1,6 @@
 import { mkdirSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
+import sharp from "sharp";
 import { expect, test, type Page } from "@playwright/test";
 import { content } from "../src/content";
 import { PYRAMID } from "../src/components/pyramidGeometry";
@@ -72,11 +73,11 @@ const AUTHORING_LABELS = [
   "Line beneath it",
 ];
 
-/** Measured tier outlines (pixels of the 1312 × 1199 artwork), as in pyramidGeometry.ts. */
+/** Measured tier outlines (pixels of the 1254 × 1254 artwork), as in pyramidGeometry.ts. */
 const OUTLINE_PX = {
-  "civil-services": { top: 72, bottom: 502, left: 408.6, right: 899.2 },
-  "medical-advisory": { top: 517, bottom: 806, left: 244, right: 1064.1 },
-  merlin: { top: 823, bottom: 1138, left: 54.7, right: 1252.6 },
+  "civil-services": { top: 67, bottom: 571, left: 321.4, right: 918.6 },
+  "medical-advisory": { top: 583, bottom: 877, left: 161, right: 1084.9 },
+  merlin: { top: 889, bottom: 1190, left: -5.6, right: 1256 },
 } as const;
 
 test.describe("1 · exact copy", () => {
@@ -189,8 +190,8 @@ test.describe("3 · activation", () => {
     await img.scrollIntoViewIfNeeded();
     const box = (await img.boundingBox())!;
     const probes = [
-      [0.5, (502 + 517) / 2 / PYRAMID.height], // gap apex / middle
-      [0.5, (806 + 823) / 2 / PYRAMID.height], // gap middle / foundation
+      [0.5, (571 + 583) / 2 / PYRAMID.height], // gap apex / middle
+      [0.5, (877 + 889) / 2 / PYRAMID.height], // gap middle / foundation
       [0.2, 0.25], // beside the apex
       [0.5, 0.02], // padding above the tip
     ];
@@ -342,7 +343,7 @@ test.describe("8 · motion", () => {
     await context.close();
   });
 
-  test("motion allowed: one slow light drift (12–18 s, transform/opacity) and one glint", async ({ browser }) => {
+  test("motion allowed: only the one-time glint on “medical insight”; the hero background is still", async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: "no-preference", viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
     await interceptOutbound(page);
@@ -363,16 +364,11 @@ test.describe("8 · motion", () => {
         };
       }),
     );
-    const drift = anims.filter((a) => a.name === "hero-drift");
-    expect(drift).toHaveLength(1);
-    expect(drift[0].target).toContain("hero__glow");
-    expect(drift[0].duration).toBeGreaterThanOrEqual(12000);
-    expect(drift[0].duration).toBeLessThanOrEqual(18000);
-    expect(new Set(drift[0].props)).toEqual(new Set(["opacity", "transform"]));
     const glint = anims.filter((a) => a.name === "em-glint");
     expect(glint).toHaveLength(1);
+    expect(glint[0].target).toContain("hero__em");
     expect(glint[0].iterations).toBe(1);
-    expect(anims).toHaveLength(2); // nothing else moves
+    expect(anims).toHaveLength(1); // nothing else moves, nothing loops
     await context.close();
   });
 
@@ -381,7 +377,7 @@ test.describe("8 · motion", () => {
     const layers = await page.locator(".hero__atmosphere, .hero__atmosphere > *").evaluateAll((els) =>
       els.map((el) => ({ pe: getComputedStyle(el).pointerEvents, hidden: !!el.closest("[aria-hidden='true']") })),
     );
-    expect(layers.length).toBe(5);
+    expect(layers.length).toBe(4); // wrapper, plates (SVG), shade, grain
     for (const l of layers) expect(l).toEqual({ pe: "none", hidden: true });
   });
 });
@@ -514,7 +510,7 @@ test.describe("selector composition", () => {
       expect(cs.callout.b).toBeLessThan(me.callout.t);
       // Connector heights = tier mid-heights = logo centres.
       const mid = (top: number, bottom: number) => g.img.y + ((top + bottom) / 2 / PYRAMID.height) * g.img.h;
-      const expectedY = [mid(72, 502), mid(517, 806), mid(823, 1138)];
+      const expectedY = IDS.map((id) => mid(OUTLINE_PX[id].top, OUTLINE_PX[id].bottom));
       g.rows.forEach((r, i) => {
         expect(r.display).toBe("block");
         expect(Math.abs(r.c.y - expectedY[i]), `${r.id} connector height`).toBeLessThan(1.5);
@@ -523,9 +519,9 @@ test.describe("selector composition", () => {
       // Connector ends: 10 px off the tier's edge, 12 px short of the description.
       const sx = g.img.w / PYRAMID.width;
       const edge = (x0: number, x1: number) => g.img.x + ((x0 + x1) / 2) * sx; // edge x at mid-height
-      expect(Math.abs(cs.c.l - (edge(656, 899.2) + 10))).toBeLessThan(1.5);
-      expect(Math.abs(me.c.l - (edge(1073, 1252.6) + 10))).toBeLessThan(1.5);
-      expect(Math.abs(ma.c.r - (edge(404.9, 244) - 10))).toBeLessThan(1.5);
+      expect(Math.abs(cs.c.l - (edge(627, 918.6) + 10))).toBeLessThan(1.5); // tip → bottom-right corner
+      expect(Math.abs(me.c.l - (edge(1091.4, 1256) + 10))).toBeLessThan(1.5);
+      expect(Math.abs(ma.c.r - (edge(328.5, 161) - 10))).toBeLessThan(1.5);
       expect(Math.abs(cs.c.r - (cs.callout.l - 12))).toBeLessThan(1.5);
       expect(Math.abs(me.c.r - (me.callout.l - 12))).toBeLessThan(1.5);
       expect(Math.abs(ma.c.l - (ma.callout.r + 12))).toBeLessThan(1.5);
@@ -599,7 +595,7 @@ test.describe("selector composition", () => {
 });
 
 test.describe("13 · typography and font loading", () => {
-  test("two families: Lora for the page, Cinzel only for the QME accent; all swap", async ({ page }) => {
+  test("two families: Cinzel for the headings and QME, Lora for all other text; all swap", async ({ page }) => {
     const fontFiles: string[] = [];
     page.on("request", (r) => {
       if (r.url().endsWith(".woff2")) fontFiles.push(r.url().split("/").pop()!);
@@ -608,13 +604,16 @@ test.describe("13 · typography and font loading", () => {
     const fam = await page.evaluate(() => {
       const first = (sel: string) => getComputedStyle(document.querySelector(sel)!).fontFamily.split(",")[0].replace(/"/g, "").trim();
       return {
-        lora: ["h1", ".hero__subhead", ".epigraph__quote p", "h2", ".callout__benefit", ".callout__description", ".callout__cta", ".selector__statement", ".site-footer__links a"].map(first),
-        qme: first(".qme"),
+        lora: [".hero__subhead", ".epigraph__quote p", ".callout__benefit", ".callout__description", ".callout__cta", ".selector__statement", ".site-footer__links a"].map(first),
+        cinzel: ["h1", "h2", ".qme"].map(first),
+        headingWeights: ["h1", "h2"].map((sel) => Number(getComputedStyle(document.querySelector(sel)!).fontWeight)),
         quoteStyle: getComputedStyle(document.querySelector(".epigraph__quote p")!).fontStyle,
       };
     });
     expect(new Set(fam.lora)).toEqual(new Set(["Lora Variable"]));
-    expect(fam.qme).toBe("Cinzel Variable");
+    expect(new Set(fam.cinzel)).toEqual(new Set(["Cinzel Variable"]));
+    for (const w of fam.headingWeights) expect(w).toBeGreaterThan(500); // a step above regular
+    for (const w of fam.headingWeights) expect(w).toBeLessThan(650);
     expect(fam.quoteStyle).toBe("italic");
     expect(fontFiles.length).toBeGreaterThan(0);
     for (const f of fontFiles) expect(f).toMatch(/^(cinzel|lora)-|^inter-arrow-/);
@@ -629,11 +628,12 @@ test.describe("13 · typography and font loading", () => {
     });
     expect(new Set(displays)).toEqual(new Set(["swap"]));
     const preloads = await page.locator('link[rel="preload"][as="font"]').evaluateAll((ls) => ls.map((l) => l.getAttribute("href")));
+    expect(preloads.some((h) => /cinzel-latin-wght-normal/.test(h ?? ""))).toBe(true);
     expect(preloads.some((h) => /lora-latin-wght-normal/.test(h ?? ""))).toBe(true);
     expect(preloads.some((h) => /lora-latin-wght-italic/.test(h ?? ""))).toBe(true);
   });
 
-  test("wide desktop headline: two lines, 58–72 px, the second starting with “medical insight”", async ({ page }) => {
+  test("wide desktop headline: two lines, 48–58 px, the second starting with “medical insight”", async ({ page }) => {
     for (const width of [1440, 1280]) {
       await open(page, width, 900);
       const lines = await page.locator(".hero__line").evaluateAll((els) => els.map((el) => el.getClientRects().length));
@@ -641,10 +641,10 @@ test.describe("13 · typography and font loading", () => {
       const second = await page.locator(".hero__line").nth(1).innerText();
       expect(second.startsWith("medical insight")).toBe(true);
       const size = await page.locator("h1").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
-      expect(size).toBeGreaterThanOrEqual(58);
-      expect(size).toBeLessThanOrEqual(72);
+      expect(size).toBeGreaterThanOrEqual(48);
+      expect(size).toBeLessThanOrEqual(58);
       const h1 = (await page.locator("h1").boundingBox())!;
-      expect(Math.round(h1.height / (size * 1.1))).toBe(2);
+      expect(Math.round(h1.height / (size * 1.18))).toBe(2);
     }
   });
 
@@ -683,7 +683,7 @@ test.describe("13 · typography and font loading", () => {
 });
 
 test.describe("14 · contrast", () => {
-  test("text and gold accents meet WCAG AA on their actual backgrounds", async ({ page }) => {
+  test("text and gold accents meet WCAG AA on the ivory surfaces", async ({ page }) => {
     await open(page, 1440, 900);
     const ratios = await page.evaluate(() => {
       const rgb = (c: string) => c.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
@@ -698,21 +698,54 @@ test.describe("14 · contrast", () => {
       };
       const color = (sel: string) => rgb(getComputedStyle(document.querySelector(sel)!).color);
       const ivory = [247, 243, 236];
-      const heroLight = [37, 43, 45]; // #252B2D, the lighter end of the hero gradient
       return {
         cta: ratio(color(".callout__cta"), ivory),
         description: ratio(color(".callout__description"), ivory),
         statement: ratio(color(".selector__statement"), ivory),
         footer: ratio(color(".site-footer__links a"), ivory),
         qme: ratio(color(".qme"), [247, 244, 238]),
-        headline: ratio(color("h1"), heroLight),
-        subhead: ratio(color(".hero__subhead"), heroLight),
-        quote: ratio(color(".epigraph__quote p"), heroLight),
-        cite: ratio(color(".epigraph__attribution"), heroLight),
-        // "medical insight": the darkest stop of its champagne-to-bronze gradient.
-        emphasisDarkest: ratio([194, 154, 98], heroLight),
       };
     });
     for (const [k, v] of Object.entries(ratios)) expect(v, k).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test("hero text meets AA against the lightest pixel of the plates behind it", async ({ page }) => {
+    const lum = ([r, g, b]: readonly number[]) =>
+      [r, g, b]
+        .map((v) => v / 255)
+        .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
+        .reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
+    const ratio = (fg: readonly number[], bgLum: number) => {
+      const [a, b] = [lum(fg), bgLum].sort((x, y) => y - x);
+      return (a + 0.05) / (b + 0.05);
+    };
+    const darkestEmphasis = [200, 160, 106]; // #C8A06A, the far end of the "medical insight" gradient
+    const targets = {
+      headline: "h1 .hero__line:first-child",
+      emphasis: ".hero__em",
+      subhead: ".hero__subhead",
+      quote: ".epigraph__quote p",
+      cite: ".epigraph__attribution",
+    } as const;
+    for (const width of [1440, 1024, 390]) {
+      await open(page, width, 1000);
+      const found: Record<string, { box: { x: number; y: number; width: number; height: number }; color: number[] }> = {};
+      for (const [k, sel] of Object.entries(targets)) {
+        const el = page.locator(sel).first();
+        const color = await el.evaluate((n) => getComputedStyle(n).color.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number));
+        found[k] = { box: (await el.boundingBox())!, color: k === "emphasis" ? darkestEmphasis : color };
+      }
+      // Hide the words (layout unchanged) and read the background they sit on.
+      await page.addStyleTag({ content: ".hero__inner { visibility: hidden !important; }" });
+      for (const [k, { box, color }] of Object.entries(found)) {
+        const png = await page.screenshot({ clip: box, animations: "disabled" });
+        const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
+        let lightest = 0;
+        for (let i = 0; i < data.length; i += info.channels) lightest = Math.max(lightest, lum([data[i], data[i + 1], data[i + 2]]));
+        const r = ratio(color, lightest);
+        test.info().annotations.push({ type: `hero contrast ${width} ${k}`, description: r.toFixed(2) });
+        expect(r, `${k} at ${width}`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
   });
 });

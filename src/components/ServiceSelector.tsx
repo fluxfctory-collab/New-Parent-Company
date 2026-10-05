@@ -62,8 +62,8 @@ export function ServiceSelector({ showQme }: { showQme: boolean }) {
             <picture>
               <source
                 type="image/webp"
-                srcSet="/images/guardian-pyramid-640.webp 640w, /images/guardian-pyramid-980.webp 980w, /images/guardian-pyramid-1312.webp 1312w"
-                sizes="(min-width: 1200px) 480px, (min-width: 768px) 420px, 88vw"
+                srcSet="/images/guardian-pyramid-640.webp 640w, /images/guardian-pyramid-960.webp 960w, /images/guardian-pyramid-1254.webp 1254w"
+                sizes="(min-width: 1200px) 540px, (min-width: 960px) 500px, (min-width: 467px) 420px, 90vw"
               />
               {/* Decorative: the tier links and the descriptions carry its meaning. */}
               <img

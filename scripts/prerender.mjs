@@ -5,7 +5,7 @@
 // 2. Removes the client <script> (its only job was to make Vite bundle the CSS and
 //    fonts) and deletes the resulting empty JS chunk — production ships no JavaScript.
 // 3. Copies images emitted by the SSR build into dist/assets (same hashed names).
-// 4. Preloads the latin Lora files (upright + italic) used above the fold.
+// 4. Preloads the latin font files used above the fold (Cinzel, Lora upright + italic).
 import { copyFileSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -40,13 +40,13 @@ if (existsSync(ssrAssets)) {
   }
 }
 
-// Preload the latin Lora files the first view needs: upright (headline, copy) and italic
-// (the hero quotation). Cinzel only sets the small QME label and is left to load normally.
+// Preload the latin files the first view needs: Cinzel (headline, QME), Lora upright
+// (supporting sentence) and Lora italic (the hero quotation).
 const assetFiles = readdirSync(path.join(dist, "assets"));
-const preloaded = [/^lora-latin-wght-normal-.*\.woff2$/, /^lora-latin-wght-italic-.*\.woff2$/]
+const preloaded = [/^cinzel-latin-wght-normal-.*\.woff2$/, /^lora-latin-wght-normal-.*\.woff2$/, /^lora-latin-wght-italic-.*\.woff2$/]
   .map((re) => assetFiles.find((f) => re.test(f)))
   .filter(Boolean);
-if (preloaded.length !== 2) throw new Error("Expected the Lora latin upright and italic files to preload");
+if (preloaded.length !== 3) throw new Error("Expected the Cinzel and Lora (upright, italic) latin files to preload");
 html = html.replace(
   "<!--preload-fonts-->",
   preloaded.map((f) => `<link rel="preload" href="/assets/${f}" as="font" type="font/woff2" crossorigin>`).join("\n    "),

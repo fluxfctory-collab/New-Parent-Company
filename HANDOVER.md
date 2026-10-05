@@ -1,16 +1,17 @@
 # The Guardian Group — gateway page · Handover
 
-A one-page, static gateway for The Guardian Group, built to the **selected design**: a
-light ivory header with the original logo, a dark charcoal hero with soft reflected light
-behind the headline, and an ivory section where the supplied three-tier pyramid sits
-between the three companies — Guardian Medical Advisory to the left (middle tier),
-Guardian Civil Services upper right (top tier), Merlin lower right (foundation). Each tier
-is a link; each company also has its own text link; fine bronze connectors with endpoint
-dots tie tier to company.
+A one-page, static gateway for The Guardian Group: a light ivory header with the original
+logo; a near-black hero over large, dark, embossed angular plates (after the Guardian Civil
+Services site, in a form of its own); and an ivory section where the supplied engraved
+three-tier pyramid sits between the three companies — Guardian Medical Advisory to the left
+(middle tier), Guardian Civil Services upper right (top tier), Merlin lower right
+(foundation). Each tier is a link; each company also has its own text link; fine bronze
+connectors with endpoint dots tie tier to company.
 
 - Vite 8 + React 19 + TypeScript, **prerendered to static HTML**; production ships
   **no JavaScript** (hover associations use CSS `:has()`).
-- Two self-hosted font families: **Lora** for all text, **Cinzel** only for the QME label.
+- Two self-hosted font families: **Cinzel** (weight 560) for the two headings and the QME
+  label, **Lora** for all other text.
 - All copy comes from `src/content.ts`, verified against the client's `.docx`.
 - Original logos only (trimmed derivatives; originals untouched in `_brief/`). The
   supplied pyramid artwork is used as-is (`public/images/guardian-pyramid.png`).
@@ -23,7 +24,7 @@ npm install            # Node 22+; installs exact pinned versions
 npm run dev            # http://localhost:5173 — server-rendered, same markup as production
 npm run build          # typecheck → client build (CSS, fonts) → SSR build → dist/index.html
 npm run preview        # serves dist/ at http://localhost:4173
-npm test               # build, then the Playwright + axe suite (45 checks)
+npm test               # build, then the Playwright + axe suite (46 checks)
 npm run lint           # ESLint (flat config, typescript-eslint)
 npm run typecheck      # tsc --noEmit
 npm run check:manifest # every string in src/content.ts vs the .docx
@@ -47,15 +48,46 @@ run `npx playwright install chromium` once before `npm test`.
 | QME placement | `src/App.tsx` → `qmePlacement` | `"header"` (current) · `"below-selector"` |
 | `between.la` fix | `src/content.ts` → `selector.closingLine` | `in between.la` → `in between.` — **still kept as supplied; flagged for editorial correction** |
 
-## Selected design — what was built
+## Current revision — hero, headings and pyramid (client feedback)
 
-**Inputs.** The brief's two assets were a full-page mockup and `guardian-pyramid.png`.
-**Only the pyramid arrived** (delivered to this session as a 1312 × 1199 WebP with a real
-alpha channel; stored losslessly as `public/images/guardian-pyramid.png`). **The full-page
-mockup was not attached**, so the layout follows the brief's written description of it
+**Feedback** (Arabic, summarised): the hero's background and its font were not liked. Make
+the background closer to the attached Guardian Civil Services screenshot, but in a
+different form, and **remove the rays** in it; change the font to **match the one in the
+screenshot, slightly bolder**; **replace the pyramid** with the attached one and **make it
+a bit bigger**.
+
+**What changed**
+
+- **Hero background.** Removed the champagne/bronze glow and its 16 s drift, the seven
+  contour loops and the warm light field. In their place: a near-black ground (`#121212`)
+  with five large, dark, angular plates — still, neutral grey, lit along their upper edges
+  and lifted by soft shadows, like embossed metal. The front plate carries an engraved
+  bevel, which makes it read as a plaque or shield: a nod to the reference's helmet without
+  copying it. Gold is kept for "medical insight" only. Nothing in the background moves.
+- **Font.** Cinzel — the reference's typeface — now sets the hero headline and the section
+  heading at weight **560**, a step heavier than the reference's regular. Lora stays for all
+  other text (the reference pairs Cinzel with a similar serif). Cinzel draws lowercase
+  letters as small capitals; the HTML text is unchanged mixed case and no
+  `text-transform` is used. *To keep Cinzel in the hero only:* delete `font-family` and
+  `font-weight` from `.selector__title`.
+- **Pyramid.** The new artwork (logos engraved in each tier) replaces the previous one and
+  is shown larger: 540 px wide at 1440 (the drawn pyramid is ~21 % wider than before), 500
+  px on tablet, 351 px at 390 (was ~305). Tier links, connectors and tests were re-measured
+  for it.
+- **Kept as is:** the header, copy, link targets, layout, callouts and footer. The callouts
+  still use the original logos as company headings; since the pyramid now shows the same
+  logos engraved, they could become text names in Cinzel (a small change in
+  `ServiceSelector.tsx`; not made, as the earlier brief asked for the original logos).
+
+## Design as built
+
+**Inputs.** The selected-design brief's two assets were a full-page mockup and
+`guardian-pyramid.png`. **The full-page mockup was not attached**, so the layout follows the brief's written description of it
 (sequence, asymmetric placement, connectors with dots, colours). Compare against the
 mockup when it's available; the composition is driven by a handful of variables
-(`--pyr-w`, `--reach`, `--callout-w` in `global.css`).
+(`--pyr-w`, `--reach`, `--callout-w` in `global.css`). The current pyramid arrived with the
+latest feedback: a 1254 × 1254 WebP with a real alpha channel, decoded losslessly to
+`public/images/guardian-pyramid.png` (pixel-identical to the delivered file — verified).
 
 ### Header (light)
 
@@ -63,40 +95,54 @@ mockup when it's available; the composition is driven by a handful of variables
 at 50 px (38 px mobile), unfiltered and at its natural ratio. Height 96 px desktop / 74 px
 mobile. QME: outlined in bronze, charcoal Cinzel lettering, champagne fill on hover/focus.
 
-### Hero (dark, atmospheric)
+### Hero (near-black, embossed plates)
 
-- Charcoal gradient `#1D2326 → #252B2D`, centred copy. Headline Lora 400, fluid
-  `clamp(2.25rem, 1.05rem + 3.6vw, 4.25rem)` — 68 px at 1440, 63 px at 1280 — line-height
-  1.1. At ≥ 1100 px it is set as **two editorial lines**, "For the litigation teams who rely
-  on / medical insight and testimony.", so the emphasised phrase opens line 2; narrower
-  screens wrap naturally (`text-wrap: balance`). The visible text is unchanged.
-- "medical insight" in a champagne-to-bronze gradient (darkest stop 5.53 : 1 on the hero),
-  with one narrow highlight passing across once on entry.
-- Background layers (all `aria-hidden`, `pointer-events: none`): a broad champagne/bronze
-  radial glow behind the emphasised phrase (the only looping animation — a 16 s
-  transform/opacity drift); a dimmer light field (warm corners, darker edges, a soft shade
-  under the header); seven widely spaced contour loops at 5 % opacity; fine grain at 3 %.
-- Supporting sentence, a short gold divider, the quotation in Lora italic and a quieter
-  attribution. "Services —" is kept on one line so no line ever starts with the dash.
-- Reduced motion: no drift, no glint; the static composition is identical otherwise.
+- Ground `#121212`; centred copy. Background layers, all `aria-hidden` with
+  `pointer-events: none`:
+  - **Plates** — one static inline SVG (a 1440 × 720 field, cropped to fill the hero at any
+    size). Five angular plates: two barely lifted at the edges, one low on the right, and the
+    main form in the centre, two overlapping plates. Each plate has a grey tone gradient (at
+    most 42 → 17 of 255), a soft drop shadow, and a 1 px lit edge that fades from the top. The
+    two central plates are folded, with one face shaded. The front plate has an engraved
+    bevel inset 26 px. Plate data and the inset/fold geometry are in `Hero.tsx` (`PLATES`).
+  - **Shade** — a soft dimming behind the words (it keeps contrast high over the plates),
+    depth toward the edges, and a shadow under the light header.
+  - **Grain** at 3 %, so the dark gradients never band.
+- **Headline** in Cinzel 560, fluid `clamp(1.875rem, 1.05rem + 2.6vw, 3.5rem)`: 54 px at
+  1440, 50 px at 1280, 30 px at 390. Line-height 1.18, `text-wrap: balance`. At ≥ 1100 px it
+  sets as two lines, "For the litigation teams who rely on / medical insight and
+  testimony.", so the emphasised phrase opens line 2.
+- "medical insight" uses a champagne-to-bronze gradient (`#ECD9B3 → #DBBC88 → #C8A06A`; the
+  far stop was lifted from `#C29A62` for contrast over the plates). One narrow highlight
+  passes across it once on entry. This is now the page's only animation.
+- Below the headline, in Lora: the supporting sentence, a short gold divider, the quotation
+  (italic) and a quieter attribution. "Services —" stays on one line, so no line ever starts
+  with the dash.
+- Reduced motion: no glint; the page is otherwise identical.
 
 ### Selector (ivory)
 
-- Centred heading with a short bronze rule; `#F7F3EC` surface.
-- **Pyramid**: the supplied image, never cropped or stretched (`height: auto`,
-  `object-fit: contain`; tested at 1440, 1024 and 390), 490 px wide at 1440, 440 px at
-  1200, centred 420/340 px on tablet/mobile. WebP sizes 640/980/1312 with the PNG as
-  fallback; width/height reserved. A faint elliptical ground shadow, no box behind it.
+- Centred heading in Cinzel 560 (`clamp(1.625rem, 1.2rem + 1.1vw, 2.375rem)`), with a short
+  bronze rule; `#F7F3EC` surface.
+- **Pyramid**: the supplied engraved artwork. It is never cropped or stretched
+  (`height: auto`, `object-fit: contain`; tested at 1440, 1024 and 390).
+  - Size: 540 px wide at 1440, 460 px at 1200; centred at `clamp(320px, 50vw, 500px)` on
+    tablet and `min(420px, 90vw)` on mobile.
+  - Files: WebP at 640, 960 and 1254 px, with the PNG as fallback; width and height are
+    reserved.
+  - A faint elliptical ground shadow sits under it; there is no box behind it.
 - **Tier links**: three native SVG `<a>` elements over the image, each a polygon that
   traces its tier's outer gold frame in **normalized image coordinates** (measured from the
   alpha channel by `scripts/prepare-pyramid.mjs`; transparent padding included). The gaps
-  between tiers and the padding are not links (tested). Names: "Guardian Civil Services —
+  between tiers and the padding are not links (tested). The artwork is cropped tight at the
+  foundation's bottom corners, so that polygon's corners sit where the frame's edges meet,
+  ≤ 2.4 px beyond the image box at display size. Names: "Guardian Civil Services —
   top tier of the pyramid", etc. Focus draws a charcoal ring along the tier's own outline.
 - **Descriptions**: original logo as the `h3` (alt = company name), benefit line, description,
   and a text link ("Learn more →" / "Explore Merlin →", dark gold `#71502C`, 6.58 : 1;
   accessible names "Learn more Guardian Civil Services" etc.). No nested links.
 - **Desktop (≥ 1200)**: Medical Advisory left (right-aligned), Civil Services upper right,
-  Merlin lower right. Each description's logo is centred on its tier's mid-height; the
+  Merlin lower right; descriptions up to 320 px wide, 48 px from the pyramid's box. Each description's logo is centred on its tier's mid-height; the
   connector runs from 10 px off the tier's edge to 12 px short of the description, with 5 px
   bronze dots at both ends (all tested to ±1.5 px at 1440, 1280 and 1200).
 - **Association**: pointing at or focusing a tier deepens its connector (dots grow
@@ -121,7 +167,7 @@ match (strings unchanged; the manifest check still passes).
 
 ## Verification results (this build)
 
-Run on 2026-10-05: `npm run check:manifest && npm run typecheck && npm run lint && npm test` → **45 passed**.
+Run on 2026-10-05 for the current revision: `npm run check:manifest && npm run typecheck && npm run lint && npm test` → **46 passed**.
 
 | Area | Result | What was checked |
 |---|---|---|
@@ -134,14 +180,14 @@ Run on 2026-10-05: `npm run check:manifest && npm run typecheck && npm run lint 
 | Accessible names | **Pass** | Tier links, text links, QME, logo; the pyramid image is decorative (`alt=""`). |
 | Overflow | **Pass** | 1440, 1280, 1200, 1024, 768, 390, 360 and 200 % zoom (720 px @2×): no horizontal scroll, nothing clipped. |
 | Touch targets | **Pass** | Every link ≥ 44 × 44 at 390 and 360. |
-| Motion | **Pass** | Reduced motion: zero animations, all content at full opacity, no arrow travel. Otherwise exactly two animations: the glow's drift (16 s, transform + opacity, on `.hero__glow`) and the one-time glint. Hero layers are `aria-hidden` with `pointer-events: none`. |
+| Motion | **Pass** | Reduced motion: zero animations, all content at full opacity, no arrow travel. Otherwise exactly one animation: the one-time glint on "medical insight". The hero background is still. Its four layers (wrapper, plates, shade, grain) are `aria-hidden` with `pointer-events: none`. |
 | No JS | **Pass** | Copy and links present with JS disabled; no `<script>` in the build. |
 | Header | **Pass** | 96 px at 1440, 74 px at 390; `#F7F4EE`; bronze rule; logo unfiltered; QME bronze border, charcoal Cinzel text. |
 | Images | **Pass** | 6 images load with reserved dimensions and unchanged aspect ratios; pyramid `object-fit: contain`; layout shift < 0.01; the supplied PNG is served at `/images/guardian-pyramid.png`. |
 | axe | **Pass** | No serious or critical violations at 1440, 1024, 390. |
 | Composition | **Pass** | Desktop placement, connector heights/ends, logo-on-connector alignment, statement clearance; tablet/mobile: connectors hidden, pyramid centred, descriptions below in top-to-bottom order; hover/focus associations in both directions. |
-| Typography | **Pass** | Lora everywhere except the Cinzel QME label; only Cinzel/Lora files (+ the one-glyph arrow supplement) download; all faces `font-display: swap`; Lora upright + italic preloaded; headline two lines at 1440 and 1280 at 58–72 px with line 2 starting "medical insight"; with fonts delayed 1.5 s the heading moves < 2 px and layout shift < 0.01. |
-| Contrast | **Pass** | Text link 6.58 : 1, descriptions and statement 6.20, footer 7.47, QME 13.82; on the hero's lighter end (`#252B2D`): headline 12.54, supporting sentence 8.12, quotation 10.10, attribution 5.77, "medical insight" darkest stop 5.53. |
+| Typography | **Pass** | Cinzel for the `h1`, the `h2` and QME, at heading weight 560 (tested within 500–650). Lora for all other text. Only Cinzel and Lora files (plus the one-glyph arrow supplement) download, and every face uses `font-display: swap`. Cinzel and Lora (upright and italic) are preloaded. The headline is two lines at 1440 and 1280, at 48–58 px, with line 2 starting "medical insight". With fonts delayed 1.5 s, the heading moves < 2 px and layout shift stays < 0.01. |
+| Contrast | **Pass** | On ivory: text link 6.58 : 1, descriptions and statement 6.20, footer 7.47, QME 13.82. On the hero, each text element is measured against the **lightest pixel actually behind it** at 1440, 1024 and 390 (text hidden, then the screenshot is read). Minimums: headline 9.78, supporting sentence 8.12, quotation 10.64, attribution 5.08, "medical insight" darkest stop 5.08. |
 | Destination HEAD requests | **Not run** | This environment's egress policy blocks all four hosts (proxy `403` on CONNECT). Run `node scripts/check-urls.mjs` on an open network. No URL changed. |
 
 Browsers: Chromium only (Playwright). The CSS relies on `:has()`, container query units,
@@ -152,14 +198,14 @@ Browsers: Chromium only (Playwright). The CSS relies on `:has()`, container quer
 
 | File | What |
 |---|---|
-| `compare-before-after-1440.png`, `compare-before-after-first-viewport-1440.png` | Before (previous pass) / after (selected design), desktop |
+| `compare-before-after-1440.png`, `compare-before-after-first-viewport-1440.png` | Before (previous revision: glow hero, Lora headline, earlier pyramid) / after (current), desktop |
 | `compare-before-after-390.png` | Before / after, mobile |
 | `final-full-{1440,1280,1024,768,390,360}.png` | Final full pages (≤ 768 at 2×) |
-| `final-first-viewport-1440x900.png`, `final-zoom200-720.png` | First view; 200 % zoom |
-| `final-detail-header-hero.png`, `final-detail-glint.png`, `final-detail-selector.png` | 2× close-ups: header→hero transition, the glint on "medical insight", the selector |
+| `final-first-viewport-1440x900.png`, `final-zoom200-{720,640}.png` | First view; 200 % zoom |
+| `final-detail-header-hero.png`, `final-detail-selector.png` | 2× close-ups: header → hero with the plates; the selector |
 | `final-hover-civil-tier-1440.png`, `final-hover-medical-advisory-callout-1440.png` | Hover via tier; hover via description |
-| `final-focus-{qme,tier-civil,cta-merlin}-1440.png`, `final-focus-cta-390.png` | Keyboard focus |
-| `prev-*.png` | The previous pass's design (baseline for the comparisons) |
+| `final-focus-{logo,qme,tier-civil,cta-merlin}-1440.png`, `final-focus-cta-390.png` | Keyboard focus |
+| `prev-*.png` | The previous revision (baseline for the comparisons) |
 | `logo-contact-sheet.png` | Trimmed logos at their display sizes |
 
 ## Source issues for the client
@@ -168,7 +214,7 @@ Browsers: Chromium only (Playwright). The CSS relies on `:has()`, container quer
    and is kept as supplied; it looks like a typo for "…in between." (one-line change in
    `src/content.ts`; the manifest check will flag it until the `.docx` is corrected too).
 2. **Missing mockup** — the selected full-page mockup was referenced but not attached;
-   only the pyramid image was received.
+   only pyramid images were received (the current one with the latest feedback).
 3. **QME placement** — the original document says both "top right" and "separate and
    below"; it is in the header, as this brief specifies.
 4. **Logo filenames** — "Medical Advisory Bronze 2" is the white-wordmark (dark background)
@@ -183,16 +229,16 @@ Browsers: Chromium only (Playwright). The CSS relies on `:has()`, container quer
 src/content.ts                       every visible string (single source of truth), top tier first
 src/App.tsx                          page assembly + qmePlacement switch
 src/components/Header.tsx            light header, original logo, QME
-src/components/Hero.tsx              charcoal hero, background layers, two-line headline
+src/components/Hero.tsx              near-black hero, embossed plates (static SVG), two-line headline
 src/components/ServiceSelector.tsx   heading, pyramid image, tier links, connectors, descriptions
 src/components/pyramidGeometry.ts    measured tier outlines → normalized polygons + anchors
 src/components/Footer.tsx            ivory footer, three links in the supplied order
 src/styles/tokens.css                colours (contrast-measured), type, layout tokens
-src/styles/global.css                layout, hero atmosphere, composition, states, breakpoints
-src/styles/fonts.css                 Lora + Cinzel, the → glyph supplement, metric fallbacks
-public/images/guardian-pyramid*.*    the supplied pyramid (PNG) + WebP sizes
+src/styles/global.css                layout, hero plates and shade, composition, states, breakpoints
+src/styles/fonts.css                 Cinzel + Lora, the → glyph supplement, metric fallbacks
+public/images/guardian-pyramid*.*    the supplied engraved pyramid (PNG, lossless) + WebP 640/960/1254
 scripts/prepare-pyramid.mjs          pyramid WebP sizes + tier outline measurement
-tests/site.spec.ts                   Playwright + axe suite (45 checks)
+tests/site.spec.ts                   Playwright + axe suite (46 checks)
 _brief/                              the client's original files, untouched
 ```
 
@@ -200,8 +246,19 @@ _brief/                              the client's original files, untouched
 
 # History
 
-The sections below record the two earlier passes. Where they describe the hero, palette,
-pyramid drawing or row layout, the selected design above supersedes them.
+The sections below record the earlier passes. Where they describe the hero, palette,
+fonts, pyramid or row layout, the current design above supersedes them.
+
+## Previous revision: selected design (commit `f17c3b7`)
+
+Built to the *Selected Design* brief: the light header, the asymmetric selector, the
+connectors and the footer, all still in place. What the latest feedback replaced:
+
+- **Hero:** a charcoal gradient (`#1D2326 → #252B2D`), a broad champagne/bronze radial glow
+  drifting over 16 s, seven contour loops at 5 %, and a warm light field.
+- **Headline:** Lora 400 at 68 px (1440). **Section heading:** Lora.
+- **Pyramid:** the earlier 1312 × 1199 artwork, without logos, at 490 px.
+- **Tests:** 45 checks; hero contrast was measured against the gradient's lighter end.
 
 ## Previous pass: visual refinement (Cinzel/Lora, metallic gold, drawn pyramid)
 

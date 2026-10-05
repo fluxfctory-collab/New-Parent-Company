@@ -3,10 +3,11 @@
 //
 //   node scripts/prepare-pyramid.mjs
 //
-// The PNG is the client-supplied artwork (1312 × 1199, transparent background), stored
-// as delivered. This script never crops or redraws it: it only writes resized WebP copies
-// with the same aspect ratio, and reports each tier's outline from the alpha channel so
-// the hit polygons in src/components/pyramidGeometry.ts can be checked against it.
+// The PNG is the client-supplied artwork (1254 × 1254, transparent background), decoded
+// losslessly from the delivered WebP. This script never crops or redraws it: it only
+// writes resized WebP copies with the same aspect ratio, and reports each tier's outline
+// from the alpha channel so the hit polygons in src/components/pyramidGeometry.ts can be
+// checked against it.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
@@ -15,7 +16,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(root, "public/images/guardian-pyramid.png");
 const { width, height } = await sharp(SRC).metadata();
 
-for (const w of [640, 980, 1312]) {
+for (const w of [640, 960, width]) {
   const out = path.join(root, `public/images/guardian-pyramid-${w}.webp`);
   await sharp(SRC).resize({ width: w }).webp({ quality: 90, alphaQuality: 100, effort: 6 }).toFile(out);
   console.log(`wrote ${path.relative(root, out)} (${w} × ${Math.round((w * height) / width)})`);
