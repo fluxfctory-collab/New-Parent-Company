@@ -1,0 +1,650 @@
+/* ── Base ─────────────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, p, figure, blockquote, ul {
+  margin: 0;
+  padding: 0;
+}
+
+ul {
+  list-style: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--bronze-ink);
+  outline-offset: 4px;
+}
+
+.container {
+  width: min(100% - 2 * var(--gutter), var(--content-max));
+  margin-inline: auto;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────────── */
+.site-header {
+  border-bottom: 1px solid var(--rule);
+}
+
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 88px;
+}
+
+.site-header__brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.site-header__logo img {
+  height: 40px;
+  width: auto;
+}
+
+.qme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 18px 0 calc(18px + 0.06em); /* balances the trailing letter-spacing */
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  color: var(--ink);
+  font: 500 0.875rem/1 var(--sans);
+  letter-spacing: 0.06em;
+  transition:
+    border-color var(--dur) var(--ease),
+    background-color var(--dur) var(--ease);
+}
+
+.qme:hover {
+  border-color: var(--bronze);
+  background: var(--bronze-wash);
+}
+
+.qme--below {
+  margin-top: 32px;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────────────── */
+.hero {
+  padding-block: clamp(48px, 2rem + 3vw, 84px) clamp(48px, 2rem + 2.2vw, 68px);
+}
+
+.hero__grid {
+  display: grid;
+  row-gap: 36px;
+}
+
+.hero__title {
+  max-width: 14em;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: var(--fs-h1);
+  line-height: 1.08;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+
+.hero__subhead {
+  max-width: 34em; /* ≈ 52ch; em, not ch, so wrapping doesn't depend on font-load timing */
+  margin-top: clamp(18px, 1rem + 0.6vw, 26px);
+  color: var(--ink-2);
+  font-size: var(--fs-subhead);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.epigraph::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 1px;
+  margin-bottom: 16px;
+  background: var(--bronze);
+}
+
+.epigraph__quote p {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--fs-epigraph);
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.epigraph__attribution {
+  margin-top: 8px;
+  color: var(--bronze-ink);
+  font-size: var(--fs-small);
+  letter-spacing: 0.01em;
+}
+
+/* ── Service selector: shared ─────────────────────────────────────────────────── */
+.selector-section {
+  padding-bottom: clamp(64px, 3rem + 4vw, 112px);
+}
+
+.selector-section__title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: var(--fs-h2);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.selector-section__closing {
+  max-width: 44em;
+  color: var(--ink-2);
+  font-family: var(--serif);
+  font-size: clamp(1.125rem, 1rem + 0.4vw, 1.3125rem);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.service__name {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: var(--fs-h3);
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+
+.service__benefit {
+  margin-top: 6px;
+  color: var(--ink);
+  font-size: var(--fs-benefit);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.service__description {
+  max-width: 38em; /* ≈ 60ch */
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.service__cta {
+  display: inline-block;
+  margin-top: 12px;
+  color: var(--bronze-ink);
+  font-size: var(--fs-cta);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.service__cta-label {
+  text-decoration: underline 1px transparent;
+  text-underline-offset: 4px;
+  transition: text-decoration-color var(--dur) var(--ease);
+}
+
+.service__arrow {
+  display: inline-block;
+  transition: transform var(--dur) var(--ease);
+}
+
+.service:is(:hover, :focus-visible) .service__cta-label {
+  text-decoration-color: currentColor;
+}
+
+.service:is(:hover, :focus-visible) .service__arrow {
+  transform: translateX(3px);
+}
+
+.service__logo img {
+  width: auto;
+  height: 36px;
+}
+
+.service__logo--merlin img {
+  height: 38px;
+}
+
+/* Tier shapes (desktop bands, mobile overview and row glyphs) */
+.tier-shape--apex {
+  --l: var(--apex-l);
+  --r: var(--apex-r);
+  --l-hover: var(--apex-l-hover);
+  --r-hover: var(--apex-r-hover);
+  --stroke-l: var(--apex-stroke-l, var(--apex-stroke, transparent));
+  --stroke-r: var(--apex-stroke-r, var(--apex-stroke, transparent));
+}
+
+.tier-shape--middle {
+  --l: var(--middle-l);
+  --r: var(--middle-r);
+  --l-hover: var(--middle-l-hover);
+  --r-hover: var(--middle-r-hover);
+  --stroke-l: var(--middle-stroke-l, var(--middle-stroke, transparent));
+  --stroke-r: var(--middle-stroke-r, var(--middle-stroke, transparent));
+}
+
+.tier-shape--foundation {
+  --l: var(--foundation-l);
+  --r: var(--foundation-r);
+  --l-hover: var(--foundation-l-hover);
+  --r-hover: var(--foundation-r-hover);
+  --stroke-l: var(--foundation-stroke-l, var(--foundation-stroke, transparent));
+  --stroke-r: var(--foundation-stroke-r, var(--foundation-stroke, transparent));
+}
+
+/* Row glyphs: the row's own tier in colour, the other two as a hairline silhouette. */
+.is-muted .tier-shape {
+  --l: transparent;
+  --r: transparent;
+  --stroke-l: var(--rule-strong);
+  --stroke-r: var(--rule-strong);
+}
+
+.tier-shape__fill-r {
+  fill: var(--r);
+  transition: fill var(--dur) var(--ease);
+}
+
+.tier-shape__fill-l {
+  fill: var(--l);
+  transition: fill var(--dur) var(--ease);
+}
+
+.service:is(:hover, :focus-visible) .service__tier .tier-shape__fill-r {
+  fill: var(--r-hover);
+}
+
+.service:is(:hover, :focus-visible) .service__tier .tier-shape__fill-l {
+  fill: var(--l-hover);
+}
+
+.tier-shape__outline-l,
+.tier-shape__outline-r {
+  fill: none;
+  stroke-width: 1px;
+}
+
+.tier-shape__outline-l { stroke: var(--stroke-l); }
+.tier-shape__outline-r { stroke: var(--stroke-r); }
+
+/* One paper hairline between bands, drawn once (by the band above). */
+.tier-shape__seam {
+  fill: none;
+  stroke: var(--paper);
+  stroke-width: 1.5px;
+}
+
+/* ── Service selector: desktop composition ────────────────────────────────────── */
+@media (min-width: 1000px) {
+  .selector-overview,
+  .service__glyph {
+    display: none;
+  }
+
+  /* The pyramid is sized from the content column (container query units) so the copy
+     column never drops below ≈ 470 px — the longest benefit line is 463 px wide. */
+  .selector-section > .container {
+    container-type: inline-size;
+  }
+
+  .selector {
+    --pyr-w: clamp(360px, 100cqi - 494px, 520px);
+    --band-h: calc(var(--pyr-w) / 3.36); /* base ≈ 1.12 × total height */
+    --conn-gap: 24px;
+    display: grid;
+    grid-template-rows: repeat(3, minmax(var(--band-h), 1fr));
+    margin-block: clamp(36px, 1.5rem + 1.5vw, 52px);
+  }
+
+  .service {
+    position: relative;
+    display: grid;
+    grid-column: 1;
+    grid-template-columns: var(--pyr-w) var(--conn-gap) minmax(0, 1fr);
+    /* Only the painted tier, the connector zone and the copy column are hit targets,
+       so the paper beside the narrow tiers is not part of a link. */
+    pointer-events: none;
+  }
+
+  .service:focus-visible {
+    outline: none;
+  }
+
+  .service--apex { grid-row: 1; }
+  .service--middle { grid-row: 2; }
+  .service--foundation { grid-row: 3; }
+
+  .service__tier {
+    display: block;
+    grid-area: 1 / 1;
+  }
+
+  .service__tier svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .service__tier polygon {
+    pointer-events: auto;
+  }
+
+  /* Full-height hit zone; the hairline itself is drawn at the band's vertical middle. */
+  .service__connector {
+    position: relative;
+    grid-area: 1 / 1 / auto / 3;
+    margin-left: calc(var(--pyr-w) * var(--edge) + 12px);
+    margin-right: 22px;
+    pointer-events: auto;
+  }
+
+  .service__connector::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 0;
+    left: 0;
+    height: 1px;
+    background: var(--rule-strong);
+    transition:
+      left var(--dur) var(--ease),
+      background-color var(--dur) var(--ease);
+  }
+
+  .service:is(:hover, :focus-visible) .service__connector::before {
+    left: -8px;
+    background: var(--bronze);
+  }
+
+  .service__text {
+    display: flex;
+    grid-area: 1 / 3;
+    align-items: center;
+    padding-block: 10px;
+    pointer-events: auto;
+  }
+
+  .service__panel {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    width: 100%;
+  }
+
+  /* Hover tint sits outside the panel's box so it never moves the text. */
+  .service__panel::before {
+    content: "";
+    position: absolute;
+    inset: -12px;
+    z-index: -1;
+    border-radius: 2px;
+    background: transparent;
+    transition: background-color var(--dur) var(--ease);
+  }
+
+  .service:is(:hover, :focus-visible) .service__panel::before {
+    background: color-mix(in srgb, var(--bronze-wash) 60%, transparent);
+  }
+
+  .service:focus-visible .service__panel {
+    outline: 2px solid var(--bronze-ink);
+    outline-offset: 12px;
+  }
+
+  /* 1000–1279: the logo sits on the name's line, so the copy keeps a readable measure.
+     A fixed logo slot (the 32 px Guardian logos are 118 px wide) keeps the names aligned. */
+  .service__panel {
+    grid-template-columns: 119px minmax(0, 1fr);
+    column-gap: 16px;
+    align-items: center;
+  }
+
+  .service__brand { grid-area: 1 / 1; }
+  .service__copy { display: contents; }
+  .service__name { grid-area: 1 / 2; }
+
+  .service__benefit,
+  .service__description,
+  .service__cta {
+    grid-column: 1 / -1;
+  }
+
+  .service__benefit { margin-top: 8px; }
+  .service__cta { justify-self: start; margin-top: 10px; }
+
+  .service__logo img { height: 32px; }
+  .service__logo--merlin img { height: 34px; }
+}
+
+/* ≥ 1280: a logo column that the connector runs into, centred on the band's middle. */
+@media (min-width: 1280px) {
+  .selector {
+    --pyr-w: clamp(480px, 100cqi - 650px, 550px);
+    --logo-col: 134px;
+  }
+
+  .service__panel {
+    grid-template-columns: var(--logo-col) minmax(0, 1fr);
+    column-gap: 24px;
+  }
+
+  .service__copy { display: block; }
+
+  .service__benefit { margin-top: 6px; }
+
+  .service__logo img { height: 36px; }
+  .service__logo--merlin img { height: 38px; }
+}
+
+@media (min-width: 1000px) {
+  /* One orchestrated moment: the tiers settle in from the foundation upward. */
+  @media (prefers-reduced-motion: no-preference) {
+    .service__tier svg {
+      animation: tier-settle 280ms var(--ease) both;
+    }
+
+    .service--middle .service__tier svg { animation-delay: 60ms; }
+    .service--apex .service__tier svg { animation-delay: 120ms; }
+  }
+}
+
+@keyframes tier-settle {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* ── Service selector: mobile ─────────────────────────────────────────────────── */
+@media (max-width: 999.98px) {
+  .selector-overview {
+    display: block;
+    width: clamp(140px, 40vw, 180px);
+    height: auto;
+    margin: 28px 0 32px;
+  }
+
+  .selector {
+    border-top: 1px solid var(--rule);
+    margin-bottom: 32px;
+  }
+
+  .service {
+    display: block;
+    padding-block: 28px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .service__tier,
+  .service__connector {
+    display: none;
+  }
+
+  .service__brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  .service__glyph {
+    flex: none;
+    width: 32px;
+    height: auto;
+  }
+
+  .service__logo img {
+    height: 30px;
+  }
+
+  .service__logo--merlin img {
+    height: 32px;
+  }
+
+  .service:focus-visible {
+    outline-offset: 2px;
+  }
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────────── */
+.site-footer {
+  border-top: 1px solid var(--rule);
+}
+
+.site-footer__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 32px;
+  padding-block: 24px;
+}
+
+.site-footer__logo img {
+  width: auto;
+  height: 28px;
+}
+
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 28px;
+}
+
+.site-footer__links a {
+  display: inline-flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+  text-decoration: underline 1px transparent;
+  text-underline-offset: 4px;
+  transition:
+    color var(--dur) var(--ease),
+    text-decoration-color var(--dur) var(--ease);
+}
+
+.site-footer__links a:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+
+/* ── Header, hero, footer: breakpoints ────────────────────────────────────────── */
+@media (min-width: 1000px) {
+  .hero__grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: 24px;
+    align-items: end;
+  }
+
+  .hero__main {
+    grid-column: 1 / span 8;
+  }
+
+  .epigraph {
+    grid-column: 9 / span 4; /* 1000–1279: three columns would break the quote */
+  }
+}
+
+@media (min-width: 1280px) {
+  .epigraph {
+    grid-column: 10 / span 3;
+  }
+}
+
+@media (max-width: 999.98px) {
+  .site-header__inner {
+    min-height: 64px;
+  }
+
+  .site-header__logo img {
+    height: 30px;
+  }
+
+  .site-footer__inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .site-footer__logo img {
+    height: 26px;
+  }
+
+  .site-footer__links {
+    flex-direction: column;
+  }
+}
+
+/* ── Reduced motion: no entrance, no arrow travel, colour changes near-instant ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 80ms !important;
+  }
+
+  .service:is(:hover, :focus-visible) .service__arrow {
+    transform: none;
+  }
+
+  .service:is(:hover, :focus-visible) .service__connector::before {
+    left: 0;
+  }
+}

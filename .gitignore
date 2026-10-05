@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-ssr/
+test-results/
+playwright-report/
+*.log
+.DS_Store
+# The original client archive; its extracted, untouched contents live in _brief/.
+Brief-4118956-files_2_.zip
