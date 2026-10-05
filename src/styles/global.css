@@ -106,7 +106,7 @@ a {
   margin-top: 32px;
 }
 
-/* ── Hero: near-black, centred, over large embossed angular plates ────────────── */
+/* ── Hero: centred, over the supplied photograph of gold-lit glass panels ──────── */
 .hero {
   position: relative;
   isolation: isolate;
@@ -128,46 +128,39 @@ a {
   z-index: -1;
 }
 
-.hero__plates {
-  width: 100%;
-  height: 100%;
+/* The photograph fills the hero; the panels stay at both edges, the plain wall behind
+   the words. Portrait screens get a version with the panels moved closer together
+   (scripts/prepare-hero.mjs), so they still frame the text. */
+.hero__photo {
+  background: var(--onyx) url("/images/hero-background-1840.webp") 50% 50% / cover no-repeat;
 }
 
-/* Plate edges: a fine lit line, strongest at the top; folds and engraved grooves. */
-.hero__edge {
-  fill: none;
-  stroke: url(#hero-edge);
-  stroke-width: 1.2px;
-  vector-effect: non-scaling-stroke;
+@media (max-width: 1279.98px) {
+  .hero__photo {
+    background-image: url("/images/hero-background-1280.webp");
+  }
 }
 
-.hero__ridge {
-  stroke: rgb(255 255 255 / 0.05);
-  stroke-width: 1px;
-  vector-effect: non-scaling-stroke;
+@media (max-width: 899.98px) {
+  .hero__photo {
+    background-image: url("/images/hero-background-narrow-960.webp");
+  }
 }
 
-.hero__groove {
-  fill: none;
-  stroke: rgb(0 0 0 / 0.55);
-  stroke-width: 1.5px;
-  vector-effect: non-scaling-stroke;
-}
-
-/* A soft dimming behind the words, depth toward the edges, and a shadow under the
-   light header. */
+/* A little darker overall, and darker still across the text block (the lines of the
+   headline reach the lit glass), so every word reads clearly while the panels still
+   glow at the edges. Narrow screens, where the text spans the panels, go a step darker. */
 .hero__shade {
+  --dim: 0.32;
   background:
-    radial-gradient(58% 50% at 50% 46%, rgb(0 0 0 / 0.24), rgb(0 0 0 / 0) 100%),
-    linear-gradient(180deg, rgb(0 0 0 / 0.35), rgb(0 0 0 / 0) 120px),
-    radial-gradient(120% 100% at 50% 40%, transparent 50%, rgb(0 0 0 / 0.55) 100%);
+    radial-gradient(75% 70% at 50% 45%, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.38) 60%, rgb(0 0 0 / 0) 100%),
+    linear-gradient(rgb(0 0 0 / var(--dim)), rgb(0 0 0 / var(--dim)));
 }
 
-/* Fine grain at ~3 % so the dark gradients never band. */
-.hero__grain {
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
+@media (max-width: 899.98px) {
+  .hero__shade {
+    --dim: 0.4;
+  }
 }
 
 .hero__inner {
@@ -446,46 +439,84 @@ a {
   text-wrap: balance;
 }
 
-/* ── Desktop (≥ 1200): the asymmetric composition with connectors ──────────────── */
-@media (min-width: 1200px) {
+/* ── Desktop (≥ 1280): the pyramid on the left; the three companies stacked to its
+   right, each joined to its tier by a connector; the statement under the pyramid ─── */
+@media (min-width: 1280px) {
+  /* A little wider than the page's text column, so the pyramid can be large. */
+  .selector-section > .container {
+    width: min(100% - 64px, 1320px);
+  }
+
   .stage {
-    --pyr-w: clamp(460px, 37.5vw, 540px);
-    --reach: 48px; /* pyramid box edge → description */
-    --callout-w: min(320px, (100cqi - var(--pyr-w)) / 2 - var(--reach));
-    position: relative;
-    width: var(--pyr-w);
-    margin-inline: auto;
-    margin-bottom: 168px; /* room for Merlin's copy below the foundation's mid-line */
+    --reach: 56px; /* pyramid box edge → descriptions */
+    --callout-w: 470px; /* each benefit line and the shorter descriptions on one line */
+    --pyr-w: min(780px, 100cqi - var(--reach) - var(--callout-w));
+    display: grid;
+    grid-template-columns: var(--pyr-w) var(--reach) var(--callout-w);
+    grid-template-rows: auto 1fr;
+    justify-content: center;
   }
 
   .pyramid {
+    grid-column: 1;
+    grid-row: 1;
     width: 100%;
   }
 
+  /* Rows run from one connector height to the next, so each logo's centre lands on its
+     connector (the column starts half a logo above the first). The last row is in flow,
+     so the section always makes room for Merlin's copy. */
+  .callouts {
+    --row-logo: 52px;
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    display: grid;
+    grid-template-rows:
+      calc((var(--ay-2) - var(--ay-1)) * var(--pyr-w))
+      calc((var(--ay-3) - var(--ay-2)) * var(--pyr-w))
+      auto;
+    align-items: start;
+    margin-top: calc(var(--ay-1) * var(--pyr-w) - var(--row-logo) / 2);
+  }
+
   .callout {
+    position: relative;
+    margin-top: calc((var(--row-logo) - var(--logo-h)) / 2);
+  }
+
+  /* Fine dividers between the companies, a fixed step above each logo. */
+  .callout + .callout::before {
+    content: "";
     position: absolute;
-    top: calc(var(--ay) * 100%);
-    width: var(--callout-w);
-    margin-top: calc(var(--logo-h) / -2); /* the logo's centre sits on the connector */
+    top: calc(-30px - (var(--row-logo) - var(--logo-h)) / 2); /* 30 px above the row */
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--divider);
   }
 
-  .callout--right {
-    left: calc(100% + var(--reach));
+  .callout__benefit {
+    margin-top: 14px;
   }
 
-  .callout--left {
-    right: calc(100% + var(--reach));
-    text-align: right;
+  .callout__cta {
+    min-height: 34px;
   }
 
-  .callout--left .callout__logo img {
-    margin-left: auto;
+  .selector__statement {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    max-width: 30em;
+    margin-top: clamp(28px, 1rem + 1.5vw, 48px);
   }
 
   .connector {
     display: block;
     position: absolute;
     top: calc(var(--ay) * 100%);
+    left: calc(var(--ax) * 100% + 18px);
+    right: calc(-1 * var(--reach) + 22px);
     height: 1px;
     background: var(--bronze);
     opacity: 0.75;
@@ -494,32 +525,19 @@ a {
       opacity var(--dur) var(--ease);
   }
 
-  .connector--right {
-    left: calc(var(--ax) * 100% + 10px);
-    right: calc(-1 * var(--reach) + 12px);
-  }
-
-  .connector--left {
-    right: calc((1 - var(--ax)) * 100% + 10px);
-    left: calc(-1 * var(--reach) + 12px);
-  }
-
-  /* Endpoint dots */
-  .connector::before,
-  .connector::after {
+  /* The dot where the connector leaves its tier. */
+  .connector::before {
     content: "";
     position: absolute;
     top: 50%;
-    width: 5px;
-    height: 5px;
+    left: 0;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: inherit;
     translate: -50% -50%;
     transition: scale var(--dur) var(--ease);
   }
-
-  .connector::before { left: 0; }
-  .connector::after { left: 100%; }
 
   .stage:has(.tier-link--civil-services:is(:hover, :focus-visible)) .connector--civil-services,
   .stage:has(.tier-link--medical-advisory:is(:hover, :focus-visible)) .connector--medical-advisory,
@@ -532,23 +550,17 @@ a {
   }
 
   .stage:has(.tier-link--civil-services:is(:hover, :focus-visible)) .connector--civil-services::before,
-  .stage:has(.tier-link--civil-services:is(:hover, :focus-visible)) .connector--civil-services::after,
   .stage:has(.tier-link--medical-advisory:is(:hover, :focus-visible)) .connector--medical-advisory::before,
-  .stage:has(.tier-link--medical-advisory:is(:hover, :focus-visible)) .connector--medical-advisory::after,
   .stage:has(.tier-link--merlin:is(:hover, :focus-visible)) .connector--merlin::before,
-  .stage:has(.tier-link--merlin:is(:hover, :focus-visible)) .connector--merlin::after,
   .stage:has(.callout--civil-services:is(:hover, :focus-within)) .connector--civil-services::before,
-  .stage:has(.callout--civil-services:is(:hover, :focus-within)) .connector--civil-services::after,
   .stage:has(.callout--medical-advisory:is(:hover, :focus-within)) .connector--medical-advisory::before,
-  .stage:has(.callout--medical-advisory:is(:hover, :focus-within)) .connector--medical-advisory::after,
-  .stage:has(.callout--merlin:is(:hover, :focus-within)) .connector--merlin::before,
-  .stage:has(.callout--merlin:is(:hover, :focus-within)) .connector--merlin::after {
+  .stage:has(.callout--merlin:is(:hover, :focus-within)) .connector--merlin::before {
     scale: 1.4;
   }
 }
 
-/* ── Tablet (960–1199): pyramid centred, three descriptions in a row below ────── */
-@media (max-width: 1199.98px) {
+/* ── Tablet (960–1279): pyramid centred, three descriptions in a row below ────── */
+@media (max-width: 1279.98px) {
   .callouts {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -558,7 +570,14 @@ a {
 
   .callout {
     padding-top: 28px;
-    border-top: 1px solid var(--rule);
+    border-top: 1px solid var(--divider);
+  }
+
+  /* One logo band for all three, so the lines beneath them start level. */
+  .callout__title {
+    display: flex;
+    align-items: center;
+    min-height: 62px;
   }
 }
 
@@ -579,11 +598,15 @@ a {
   }
 
   .callout:last-child {
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 1px solid var(--divider);
+  }
+
+  .callout__title {
+    min-height: 0;
   }
 
   .callout__logo img {
-    height: calc(var(--logo-h) - 4px);
+    height: calc(var(--logo-h) * 0.85);
   }
 }
 

@@ -6,14 +6,15 @@
   --ivory-header: #F7F4EE;   /* header */
   --ivory: #F7F3EC;          /* selector section + footer */
 
-  /* dark hero: a near-black ground under lighter plates. Ratios: on --onyx / on the
-     lightest pixel actually behind the text (measured by the test suite, 390–1440 px) */
+  /* dark hero: the supplied photograph under a dimming layer. Ratios: on --onyx / on the
+     lightest pixel of the darkened photograph behind the words (measured by the test
+     suite, 390–1440 px) */
   --onyx: #121212;
   --charcoal: #1D2326;       /* focus ring on the pyramid's tiers */
-  --hero-text: #F4EFE6;      /* 16.36 : 1 / ≥ 9.78 : 1 */
-  --hero-text-2: #C9C2B6;    /* 10.59 : 1 / ≥ 8.12 : 1 — supporting sentence */
-  --hero-quote: #E3D7C2;     /* 13.17 : 1 / ≥ 10.64 : 1 */
-  --hero-cite: #ADA394;      /*  7.53 : 1 / ≥ 5.08 : 1 */
+  --hero-text: #F4EFE6;      /* 16.36 : 1 / ≥ 4.83 : 1 (headline lines reach the lit glass) */
+  --hero-text-2: #E9E3D8;    /* 14.67 : 1 / ≥ 5.79 : 1 — supporting sentence */
+  --hero-quote: #DCC08F;     /* 10.69 : 1 / ≥ 9.42 : 1 — the quotation, in gold */
+  --hero-cite: #D6CEC1;      /* 12.01 : 1 / ≥ 12.52 : 1 — attribution */
 
   /* ink on ivory */
   --ink: #242629;            /* 13.72 : 1 on --ivory */
@@ -33,7 +34,7 @@
   --metal-line: linear-gradient(90deg, #71502C 0%, #9C7845 16%, #C9A46C 32%, #DDBE88 40%, #C49C61 50%, #A47F4A 72%, #7A5730 100%);
 
   /* lines */
-  --rule: #E2D9CA;
+  --divider: rgb(184 145 90 / 0.45); /* between the stacked companies */
   --header-rule: rgb(184 145 90 / 0.55);
 
   /* layout */

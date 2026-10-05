@@ -29,28 +29,23 @@ export const tierPoints = (tier: Tier) =>
   OUTLINES_PX[tier].map((p) => norm(p).map((v) => v.toFixed(4)).join(",")).join(" ");
 
 /**
- * Where each connector leaves its tier: the tier's mid-height on the side that faces the
- * company's description (Medical Advisory sits to the left; the others to the right).
+ * Where each connector leaves its tier, as a fraction of the image height. All three
+ * descriptions sit to the right of the pyramid, one above the other; these heights spread
+ * the connectors far enough apart for a full description between them, and each stays
+ * well inside its own tier (apex 0.053–0.455, middle 0.465–0.699, foundation 0.709–0.949).
  */
-export const CONNECTOR_SIDE: Record<Tier, "left" | "right"> = {
-  apex: "right",
-  middle: "left",
-  foundation: "right",
+export const CONNECTOR_Y: Record<Tier, number> = {
+  apex: 0.17,
+  middle: 0.52,
+  foundation: 0.87,
 };
 
+/** The point on the tier's right-hand edge at its connector height (normalized). */
 export function anchor(tier: Tier): { x: number; y: number } {
   const pts = OUTLINES_PX[tier];
-  const top = pts[0][1];
-  const bottom = pts[pts.length - 1][1];
-  const yMid = (top + bottom) / 2;
-  let from: Point;
-  let to: Point;
-  if (tier === "apex") {
-    [from, to] = CONNECTOR_SIDE[tier] === "right" ? [pts[0], pts[1]] : [pts[0], pts[2]];
-  } else {
-    [from, to] = CONNECTOR_SIDE[tier] === "right" ? [pts[1], pts[2]] : [pts[0], pts[3]];
-  }
-  const t = (yMid - from[1]) / (to[1] - from[1]);
+  const [from, to] = tier === "apex" ? [pts[0], pts[1]] : [pts[1], pts[2]];
+  const y = CONNECTOR_Y[tier] * PYRAMID.height;
+  const t = (y - from[1]) / (to[1] - from[1]);
   const x = from[0] + (to[0] - from[0]) * t;
-  return { x: x / PYRAMID.width, y: yMid / PYRAMID.height };
+  return { x: x / PYRAMID.width, y: CONNECTOR_Y[tier] };
 }

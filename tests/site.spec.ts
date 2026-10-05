@@ -1,9 +1,9 @@
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import sharp from "sharp";
 import { expect, test, type Page } from "@playwright/test";
 import { content } from "../src/content";
-import { PYRAMID } from "../src/components/pyramidGeometry";
+import { CONNECTOR_Y, PYRAMID } from "../src/components/pyramidGeometry";
 
 /*
  * Verification suite for the gateway page. Outbound navigation is intercepted, so nothing
@@ -377,7 +377,7 @@ test.describe("8 · motion", () => {
     const layers = await page.locator(".hero__atmosphere, .hero__atmosphere > *").evaluateAll((els) =>
       els.map((el) => ({ pe: getComputedStyle(el).pointerEvents, hidden: !!el.closest("[aria-hidden='true']") })),
     );
-    expect(layers.length).toBe(4); // wrapper, plates (SVG), shade, grain
+    expect(layers.length).toBe(3); // wrapper, photograph, shade
     for (const l of layers) expect(l).toEqual({ pe: "none", hidden: true });
   });
 });
@@ -460,6 +460,26 @@ test.describe("11 · images", () => {
     expect(cls).toBeLessThan(0.01);
   });
 
+  test("the hero shows the supplied background, darkened by an overlay, at every size", async ({ page, request }) => {
+    const res = await request.get("/images/hero-background-1840.webp");
+    expect(res.status()).toBe(200);
+    expect(Buffer.compare(await res.body(), readFileSync("_brief/Hero background.webp"))).toBe(0); // byte for byte
+    for (const [width, file] of [[1440, "hero-background-1840"], [1024, "hero-background-1280"], [390, "hero-background-narrow-960"]] as const) {
+      await open(page, width, 900);
+      const bg = await page.locator(".hero__photo").evaluate((el) => ({
+        image: getComputedStyle(el).backgroundImage,
+        size: getComputedStyle(el).backgroundSize,
+        loaded: performance.getEntriesByType("resource").some((e) => /hero-background/.test(e.name)),
+      }));
+      expect(bg.image).toContain(`/images/${file}.webp`);
+      expect(bg.size).toBe("cover");
+      expect(bg.loaded).toBe(true);
+      // The shade dims the whole photograph (never fully transparent anywhere).
+      const shade = await page.locator(".hero__shade").evaluate((el) => getComputedStyle(el).backgroundImage);
+      expect(shade).toMatch(/linear-gradient\(rgba\(0, 0, 0, 0\.\d+\)/);
+    }
+  });
+
   test("the supplied pyramid file is served as-is", async ({ request }) => {
     const res = await request.get("/images/guardian-pyramid.png");
     expect(res.status()).toBe(200);
@@ -479,59 +499,86 @@ test.describe("12 · axe", () => {
 });
 
 test.describe("selector composition", () => {
-  test("desktop: Medical Advisory left, Civil Services upper right, Merlin lower right; connectors exact", async ({ page }) => {
-    for (const width of [1440, 1280, 1200]) {
+  test("desktop: pyramid left, the three companies stacked to its right; connectors exact", async ({ page }) => {
+    // Right-hand edge of each tier (pixels of the artwork), top corner → bottom corner.
+    const RIGHT_EDGE = {
+      "civil-services": [[627, 67], [918.6, 571]],
+      "medical-advisory": [[921.9, 583], [1084.9, 877]],
+      merlin: [[1091.4, 889], [1256, 1190]],
+    } as const;
+    const TIER = { "civil-services": "apex", "medical-advisory": "middle", merlin: "foundation" } as const;
+    for (const width of [1440, 1366, 1280]) {
       await open(page, width, 1100);
       const g = await page.evaluate(() => {
         const img = document.querySelector(".pyramid__image")!.getBoundingClientRect();
         const rect = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+        const st = rect(".selector__statement");
         return {
+          vw: document.documentElement.clientWidth,
           img: { x: img.x, y: img.y, w: img.width, h: img.height },
-          statementTop: rect(".selector__statement").top,
+          statement: { l: st.left, r: st.right, t: st.top },
+          stageBottom: rect(".stage").bottom,
           rows: ["civil-services", "medical-advisory", "merlin"].map((id) => {
+            const el = document.querySelector(`.callout--${id}`)!;
             const c = rect(`.connector--${id}`);
-            const callout = rect(`.callout--${id}`);
+            const callout = el.getBoundingClientRect();
             const logo = rect(`.callout--${id} .callout__logo img`);
+            const divider = getComputedStyle(el, "::before");
             return {
               id,
               display: getComputedStyle(document.querySelector(`.connector--${id}`)!).display,
               c: { l: c.left, r: c.right, y: c.top + c.height / 2 },
               callout: { l: callout.left, r: callout.right, t: callout.top, b: callout.bottom },
-              logoMid: logo.top + logo.height / 2,
+              logo: { t: logo.top, mid: logo.top + logo.height / 2 },
+              dividerY: divider.content === "none" ? null : callout.top + parseFloat(divider.top),
             };
           }),
         };
       });
-      const [cs, ma, me] = g.rows;
-      // Placement around the pyramid.
-      expect(ma.callout.r).toBeLessThan(g.img.x);
-      expect(cs.callout.l).toBeGreaterThan(g.img.x + g.img.w);
-      expect(me.callout.l).toBeGreaterThan(g.img.x + g.img.w);
-      expect(cs.callout.b).toBeLessThan(me.callout.t);
-      // Connector heights = tier mid-heights = logo centres.
-      const mid = (top: number, bottom: number) => g.img.y + ((top + bottom) / 2 / PYRAMID.height) * g.img.h;
-      const expectedY = IDS.map((id) => mid(OUTLINE_PX[id].top, OUTLINE_PX[id].bottom));
-      g.rows.forEach((r, i) => {
-        expect(r.display).toBe("block");
-        expect(Math.abs(r.c.y - expectedY[i]), `${r.id} connector height`).toBeLessThan(1.5);
-        expect(Math.abs(r.logoMid - r.c.y), `${r.id} logo on connector`).toBeLessThan(1.5);
-      });
-      // Connector ends: 10 px off the tier's edge, 12 px short of the description.
       const sx = g.img.w / PYRAMID.width;
-      const edge = (x0: number, x1: number) => g.img.x + ((x0 + x1) / 2) * sx; // edge x at mid-height
-      expect(Math.abs(cs.c.l - (edge(627, 918.6) + 10))).toBeLessThan(1.5); // tip → bottom-right corner
-      expect(Math.abs(me.c.l - (edge(1091.4, 1256) + 10))).toBeLessThan(1.5);
-      expect(Math.abs(ma.c.r - (edge(328.5, 161) - 10))).toBeLessThan(1.5);
-      expect(Math.abs(cs.c.r - (cs.callout.l - 12))).toBeLessThan(1.5);
-      expect(Math.abs(me.c.r - (me.callout.l - 12))).toBeLessThan(1.5);
-      expect(Math.abs(ma.c.l - (ma.callout.r + 12))).toBeLessThan(1.5);
-      // The statement clears every description.
-      for (const r of g.rows) expect(g.statementTop).toBeGreaterThan(r.callout.b + 24);
+      const sy = g.img.h / PYRAMID.height;
+      // Every description to the right of the pyramid, on one shared left edge, inside the page.
+      for (const r of g.rows) {
+        expect(r.callout.l, `${r.id} right of the pyramid`).toBeGreaterThan(g.img.x + g.img.w);
+        expect(Math.abs(r.callout.l - g.rows[0].callout.l)).toBeLessThan(0.5);
+        expect(r.callout.r).toBeLessThanOrEqual(g.vw - 24);
+        expect(r.callout.b, `${r.id} inside the stage`).toBeLessThanOrEqual(g.stageBottom + 0.5);
+      }
+      expect(g.img.x).toBeGreaterThanOrEqual(24);
+      // Top tier first, each description clear of the next, with its divider between them.
+      expect(g.rows[0].dividerY).toBeNull();
+      for (let i = 1; i < 3; i++) {
+        const [prev, next] = [g.rows[i - 1], g.rows[i]];
+        expect(next.dividerY, `${next.id} divider`).not.toBeNull();
+        expect(next.dividerY! - prev.callout.b, `${next.id} divider clears ${prev.id}`).toBeGreaterThanOrEqual(12);
+        expect(next.logo.t - next.dividerY!, `${next.id} logo clears its divider`).toBeGreaterThanOrEqual(20);
+      }
+      g.rows.forEach((r) => {
+        const id = r.id as keyof typeof RIGHT_EDGE;
+        const yPx = CONNECTOR_Y[TIER[id]] * PYRAMID.height;
+        // The connector leaves from inside its own tier, clear of the tier's top and bottom.
+        const o = OUTLINE_PX[id];
+        expect((yPx - o.top) / (o.bottom - o.top)).toBeGreaterThan(0.15);
+        expect((yPx - o.top) / (o.bottom - o.top)).toBeLessThan(0.85);
+        // Height: as specified; the logo's centre sits on it.
+        expect(r.display).toBe("block");
+        expect(Math.abs(r.c.y - (g.img.y + yPx * sy)), `${r.id} connector height`).toBeLessThan(1.5);
+        expect(Math.abs(r.logo.mid - r.c.y), `${r.id} logo on connector`).toBeLessThan(1.5);
+        // Ends: 18 px off the tier's right edge (at that height), 22 px short of the description.
+        const [[x0, y0], [x1, y1]] = RIGHT_EDGE[id];
+        const edgeX = g.img.x + (x0 + ((yPx - y0) / (y1 - y0)) * (x1 - x0)) * sx;
+        expect(Math.abs(r.c.l - (edgeX + 18)), `${r.id} connector start`).toBeLessThan(1.5);
+        expect(Math.abs(r.c.r - (r.callout.l - 22)), `${r.id} connector end`).toBeLessThan(1.5);
+      });
+      // The statement sits under the pyramid, centred on it, clear of the descriptions.
+      expect(g.statement.t).toBeGreaterThan(g.img.y + g.img.h);
+      expect(Math.abs((g.statement.l + g.statement.r) / 2 - (g.img.x + g.img.w / 2))).toBeLessThan(2);
+      expect(g.statement.r).toBeLessThan(g.rows[0].callout.l);
     }
   });
 
   test("tablet and mobile: connectors hidden, descriptions below the pyramid, top tier first", async ({ page }) => {
-    for (const width of [1024, 768, 390]) {
+    for (const width of [1200, 1024, 768, 390]) {
       await open(page, width, 1000);
       const r = await page.evaluate(() => {
         const img = document.querySelector(".pyramid__image")!.getBoundingClientRect();
@@ -542,7 +589,7 @@ test.describe("selector composition", () => {
           connectors: [...document.querySelectorAll(".connector")].map((c) => getComputedStyle(c).display),
           callouts: [...document.querySelectorAll(".callout")].map((c) => {
             const b = c.getBoundingClientRect();
-            return { id: [...c.classList].find((k) => /^callout--(?!left|right)/.test(k))!.slice(9), top: b.top };
+            return { id: [...c.classList].find((k) => /^callout--/.test(k))!.slice(9), top: b.top };
           }),
         };
       });
@@ -709,7 +756,7 @@ test.describe("14 · contrast", () => {
     for (const [k, v] of Object.entries(ratios)) expect(v, k).toBeGreaterThanOrEqual(4.5);
   });
 
-  test("hero text meets AA against the lightest pixel of the plates behind it", async ({ page }) => {
+  test("hero text meets AA against the lightest pixel of the photograph behind it", async ({ page }) => {
     const lum = ([r, g, b]: readonly number[]) =>
       [r, g, b]
         .map((v) => v / 255)
@@ -727,21 +774,34 @@ test.describe("14 · contrast", () => {
       quote: ".epigraph__quote p",
       cite: ".epigraph__attribution",
     } as const;
-    for (const width of [1440, 1024, 390]) {
+    type Box = { x: number; y: number; width: number; height: number };
+    for (const width of [1440, 1280, 1024, 768, 390]) {
       await open(page, width, 1000);
-      const found: Record<string, { box: { x: number; y: number; width: number; height: number }; color: number[] }> = {};
+      const found: Record<string, { boxes: Box[]; color: number[] }> = {};
       for (const [k, sel] of Object.entries(targets)) {
         const el = page.locator(sel).first();
         const color = await el.evaluate((n) => getComputedStyle(n).color.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number));
-        found[k] = { box: (await el.boundingBox())!, color: k === "emphasis" ? darkestEmphasis : color };
+        // The boxes of the words themselves, line by line (a paragraph's own box spans the
+        // full width, out to the panels at the edges, where there is no text).
+        const boxes = await el.evaluate((n) => {
+          const range = document.createRange();
+          range.selectNodeContents(n);
+          return [...range.getClientRects()]
+            .filter((b) => b.width > 1 && b.height > 1)
+            .map((b) => ({ x: b.x, y: b.y, width: b.width, height: b.height }));
+        });
+        expect(boxes.length, `${k} at ${width}`).toBeGreaterThan(0);
+        found[k] = { boxes, color: k === "emphasis" ? darkestEmphasis : color };
       }
       // Hide the words (layout unchanged) and read the background they sit on.
       await page.addStyleTag({ content: ".hero__inner { visibility: hidden !important; }" });
-      for (const [k, { box, color }] of Object.entries(found)) {
-        const png = await page.screenshot({ clip: box, animations: "disabled" });
-        const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
+      for (const [k, { boxes, color }] of Object.entries(found)) {
         let lightest = 0;
-        for (let i = 0; i < data.length; i += info.channels) lightest = Math.max(lightest, lum([data[i], data[i + 1], data[i + 2]]));
+        for (const box of boxes) {
+          const png = await page.screenshot({ clip: box, animations: "disabled" });
+          const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
+          for (let i = 0; i < data.length; i += info.channels) lightest = Math.max(lightest, lum([data[i], data[i + 1], data[i + 2]]));
+        }
         const r = ratio(color, lightest);
         test.info().annotations.push({ type: `hero contrast ${width} ${k}`, description: r.toFixed(2) });
         expect(r, `${k} at ${width}`).toBeGreaterThanOrEqual(4.5);

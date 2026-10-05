@@ -3,12 +3,13 @@ import type { LogoKey } from "../assets/logos/logos";
 import { content, type Service, type ServiceId, type Tier } from "../content";
 import { Logo } from "./Logo";
 import { QmeLink } from "./QmeLink";
-import { CONNECTOR_SIDE, PYRAMID, anchor, tierPoints } from "./pyramidGeometry";
+import { PYRAMID, anchor, tierPoints } from "./pyramidGeometry";
 
+/** Merlin's mark is squarer, so it is set taller to match the others' width. */
 const LOGO: Record<ServiceId, { key: LogoKey; height: number }> = {
-  "civil-services": { key: "civilServices", height: 40 },
-  "medical-advisory": { key: "medicalAdvisory", height: 40 },
-  merlin: { key: "merlin", height: 42 },
+  "civil-services": { key: "civilServices", height: 52 },
+  "medical-advisory": { key: "medicalAdvisory", height: 52 },
+  merlin: { key: "merlin", height: 62 },
 };
 
 /** Spoken position of each tier, for the tier links' accessible names. */
@@ -23,18 +24,14 @@ const ctaParts = (s: Service) => {
   return { label, ownsName: label.includes(s.name) };
 };
 
-/** A company's description beside (desktop) or below (narrower screens) the pyramid. */
+/** A company's description: to the right of the pyramid (desktop) or below it. */
 function Callout({ service }: { service: Service }) {
-  const { id, tier, name, benefit, description, href } = service;
+  const { id, name, benefit, description, href } = service;
   const { label, ownsName } = ctaParts(service);
   const logo = LOGO[id];
-  const a = anchor(tier);
   const ids = { title: `${id}-title`, cta: `${id}-cta` };
   return (
-    <li
-      className={`callout callout--${id} callout--${CONNECTOR_SIDE[tier]}`}
-      style={{ "--ay": a.y.toFixed(4), "--logo-h": `${logo.height}px` } as CSSProperties}
-    >
+    <li className={`callout callout--${id}`} style={{ "--logo-h": `${logo.height}px` } as CSSProperties}>
       {/* The original logo is the company's heading; its alt text is the name. */}
       <h3 className="callout__title" id={ids.title}>
         <Logo name={logo.key} height={logo.height} alt={name} className={`callout__logo callout__logo--${id}`} />
@@ -48,6 +45,11 @@ function Callout({ service }: { service: Service }) {
     </li>
   );
 }
+
+/** The connector heights, apex first, for the description column's rows. */
+const calloutRows = Object.fromEntries(
+  content.services.map((s, i) => [`--ay-${i + 1}`, anchor(s.tier).y.toFixed(4)]),
+) as CSSProperties;
 
 export function ServiceSelector({ showQme }: { showQme: boolean }) {
   const { heading, closingLine } = content.selector;
@@ -63,7 +65,7 @@ export function ServiceSelector({ showQme }: { showQme: boolean }) {
               <source
                 type="image/webp"
                 srcSet="/images/guardian-pyramid-640.webp 640w, /images/guardian-pyramid-960.webp 960w, /images/guardian-pyramid-1254.webp 1254w"
-                sizes="(min-width: 1200px) 540px, (min-width: 960px) 500px, (min-width: 467px) 420px, 90vw"
+                sizes="(min-width: 1280px) 780px, (min-width: 960px) 500px, (min-width: 467px) 420px, 90vw"
               />
               {/* Decorative: the tier links and the descriptions carry its meaning. */}
               <img
@@ -91,7 +93,7 @@ export function ServiceSelector({ showQme }: { showQme: boolean }) {
               return (
                 <span
                   key={s.id}
-                  className={`connector connector--${s.id} connector--${CONNECTOR_SIDE[s.tier]}`}
+                  className={`connector connector--${s.id}`}
                   style={{ "--ax": a.x.toFixed(4), "--ay": a.y.toFixed(4) } as CSSProperties}
                   aria-hidden="true"
                 />
@@ -99,14 +101,16 @@ export function ServiceSelector({ showQme }: { showQme: boolean }) {
             })}
           </div>
 
-          <ul className="callouts">
+          {/* Desktop: each description's logo is centred on its tier's connector height. */}
+          <ul className="callouts" style={calloutRows}>
             {services.map((s) => (
               <Callout key={s.id} service={s} />
             ))}
           </ul>
+
+          <p className="selector__statement">{closingLine}</p>
         </div>
 
-        <p className="selector__statement">{closingLine}</p>
         {showQme && <QmeLink className="qme--below" />}
       </div>
     </section>
