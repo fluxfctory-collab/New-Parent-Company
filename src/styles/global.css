@@ -12,12 +12,14 @@ html {
 
 body {
   margin: 0;
-  background: var(--paper);
+  /* A barely-there champagne warmth at the top right; the canvas stays #FAF8F4. */
+  background:
+    radial-gradient(110% 60% at 88% -12%, rgb(232 210 168 / 0.2), transparent 62%) no-repeat,
+    var(--paper);
   color: var(--ink);
-  font-family: var(--sans);
+  font-family: var(--text);
   font-size: 1rem;
-  line-height: 1.5;
-  font-optical-sizing: auto;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -42,7 +44,7 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--bronze-ink);
+  outline: 2px solid var(--gold-dark);
   outline-offset: 4px;
 }
 
@@ -61,7 +63,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  min-height: 88px;
+  min-height: 92px;
 }
 
 .site-header__brand {
@@ -71,30 +73,93 @@ a {
 }
 
 .site-header__logo img {
-  height: 40px;
+  height: 46px;
   width: auto;
 }
 
+/* QME: a small piece of brushed gold. */
 .qme {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 44px;
   min-height: 44px;
-  padding: 0 18px 0 calc(18px + 0.06em); /* balances the trailing letter-spacing */
-  border: 1px solid var(--rule-strong);
+  padding: 0 20px 0 calc(20px + 0.16em); /* balances the trailing letter-spacing */
+  border: 1px solid var(--gold-dark);
   border-radius: 2px;
+  background: var(--metal-surface);
+  background-size: 100% 180%;
+  background-position: 50% 54%; /* reflective band sits just above the lettering */
+  box-shadow:
+    inset 0 1px 0 rgb(255 241 206 / 0.75),
+    inset 0 -1px 0 rgb(113 80 44 / 0.3);
   color: var(--ink);
-  font: 500 0.875rem/1 var(--sans);
-  letter-spacing: 0.06em;
-  transition:
-    border-color var(--dur) var(--ease),
-    background-color var(--dur) var(--ease);
+  font: 600 0.875rem/1 var(--display);
+  letter-spacing: 0.16em;
+  transition: background-position 420ms var(--ease);
 }
 
-.qme:hover {
-  border-color: var(--bronze);
-  background: var(--bronze-wash);
+.qme__label {
+  position: relative;
+  z-index: 1;
+}
+
+/* The reflection: a narrow, soft, diagonal highlight, clipped by the control. */
+.qme::before,
+.qme::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 42%;
+  background: linear-gradient(
+    90deg,
+    rgb(255 255 255 / 0) 0%,
+    rgb(255 251 238 / 0.15) 30%,
+    rgb(255 252 242 / 0.82) 50%,
+    rgb(255 251 238 / 0.15) 70%,
+    rgb(255 255 255 / 0) 100%
+  );
+  opacity: 0;
+  transform: translateX(-160%) skewX(-20deg);
+  pointer-events: none;
+}
+
+/* Once, shortly after the page appears… */
+.qme::before {
+  animation: metal-sweep 1500ms cubic-bezier(.4, 0, .2, 1) 900ms 1 both;
+}
+
+/* …and again whenever the control is pointed at or focused. */
+.qme:is(:hover, :focus-visible)::after {
+  animation: metal-sweep 950ms cubic-bezier(.4, 0, .2, 1) 1 both;
+}
+
+.qme:is(:hover, :focus-visible) {
+  background-position: 50% 30%; /* the light shifts as if the metal tilted */
+}
+
+@keyframes metal-sweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-160%) skewX(-20deg);
+  }
+  15%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(340%) skewX(-20deg);
+  }
+}
+
+.qme:focus-visible {
+  outline-offset: 3px;
 }
 
 .qme--below {
@@ -103,119 +168,120 @@ a {
 
 /* ── Hero ─────────────────────────────────────────────────────────────────────── */
 .hero {
-  padding-block: clamp(48px, 2rem + 3vw, 84px) clamp(48px, 2rem + 2.2vw, 68px);
+  padding-block: clamp(40px, 1.5rem + 3vw, 72px) clamp(40px, 1.5rem + 2vw, 60px);
 }
 
 .hero__grid {
   display: grid;
-  row-gap: 36px;
+  row-gap: 28px;
 }
 
 .hero__title {
-  max-width: 14em;
-  font-family: var(--serif);
+  max-width: 15.5em;
+  font-family: var(--display);
   font-weight: 400;
   font-size: var(--fs-h1);
-  line-height: 1.08;
-  letter-spacing: -0.012em;
+  line-height: 1.16;
+  letter-spacing: 0.004em;
   text-wrap: balance;
 }
 
 .hero__subhead {
-  max-width: 34em; /* ≈ 52ch; em, not ch, so wrapping doesn't depend on font-load timing */
-  margin-top: clamp(18px, 1rem + 0.6vw, 26px);
+  max-width: 34em;
+  margin-top: clamp(16px, 0.75rem + 0.6vw, 24px);
   color: var(--ink-2);
   font-size: var(--fs-subhead);
-  line-height: 1.5;
+  line-height: 1.6;
   text-wrap: pretty;
 }
 
 .epigraph::before {
   content: "";
   display: block;
-  width: 36px;
+  width: 44px;
   height: 1px;
-  margin-bottom: 16px;
-  background: var(--bronze);
+  margin-bottom: 14px;
+  background: var(--metal-line);
 }
 
 .epigraph__quote p {
-  font-family: var(--serif);
   font-style: italic;
   font-size: var(--fs-epigraph);
-  line-height: 1.4;
+  line-height: 1.45;
   color: var(--ink);
 }
 
 .epigraph__attribution {
-  margin-top: 8px;
-  color: var(--bronze-ink);
-  font-size: var(--fs-small);
-  letter-spacing: 0.01em;
+  margin-top: 6px;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  letter-spacing: 0.03em;
 }
 
 /* ── Service selector: shared ─────────────────────────────────────────────────── */
 .selector-section {
-  padding-bottom: clamp(64px, 3rem + 4vw, 112px);
+  padding-bottom: clamp(56px, 2.5rem + 3.5vw, 104px);
 }
 
 .selector-section__title {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-weight: 400;
   font-size: var(--fs-h2);
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
   text-wrap: balance;
 }
 
 .selector-section__closing {
-  max-width: 44em;
+  max-width: 46em;
   color: var(--ink-2);
-  font-family: var(--serif);
-  font-size: clamp(1.125rem, 1rem + 0.4vw, 1.3125rem);
-  line-height: 1.45;
+  font-size: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  line-height: 1.6;
   text-wrap: pretty;
 }
 
 .service__name {
-  font-family: var(--serif);
-  font-weight: 600;
+  font-family: var(--display);
+  font-weight: 500;
   font-size: var(--fs-h3);
-  line-height: 1.2;
-  letter-spacing: -0.005em;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
   color: var(--ink);
 }
 
 .service__benefit {
-  margin-top: 6px;
+  margin-top: 8px;
   color: var(--ink);
   font-size: var(--fs-benefit);
   font-weight: 500;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .service__description {
-  max-width: 38em; /* ≈ 60ch */
+  max-width: 34em;
   margin-top: 4px;
   color: var(--ink-2);
   font-size: var(--fs-body);
-  line-height: 1.55;
+  line-height: 1.6;
   text-wrap: pretty;
 }
 
 .service__cta {
   display: inline-block;
   margin-top: 12px;
-  color: var(--bronze-ink);
+  color: var(--gold-dark);
   font-size: var(--fs-cta);
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 }
 
+/* A fine metallic underline that thickens on hover/focus. */
 .service__cta-label {
-  text-decoration: underline 1px transparent;
-  text-underline-offset: 4px;
-  transition: text-decoration-color var(--dur) var(--ease);
+  padding-bottom: 3px;
+  background: var(--metal-line) 0 100% / 100% 1px no-repeat;
+  transition: background-size var(--dur) var(--ease);
 }
 
 .service__arrow {
@@ -224,90 +290,79 @@ a {
 }
 
 .service:is(:hover, :focus-visible) .service__cta-label {
-  text-decoration-color: currentColor;
+  background-size: 100% 2px;
 }
 
 .service:is(:hover, :focus-visible) .service__arrow {
-  transform: translateX(3px);
+  transform: translateX(4px);
 }
 
-.service__logo img {
-  width: auto;
-  height: 36px;
-}
-
-.service__logo--merlin img {
-  height: 38px;
-}
-
-/* Tier shapes (desktop bands, mobile overview and row glyphs) */
+/* Tier shapes (desktop levels, the mobile overview and the row glyphs) */
 .tier-shape--apex {
-  --l: var(--apex-l);
-  --r: var(--apex-r);
-  --l-hover: var(--apex-l-hover);
-  --r-hover: var(--apex-r-hover);
-  --stroke-l: var(--apex-stroke-l, var(--apex-stroke, transparent));
-  --stroke-r: var(--apex-stroke-r, var(--apex-stroke, transparent));
+  --fill: var(--tier-apex);
+  --fill-hover: var(--tier-apex-hover);
 }
 
 .tier-shape--middle {
-  --l: var(--middle-l);
-  --r: var(--middle-r);
-  --l-hover: var(--middle-l-hover);
-  --r-hover: var(--middle-r-hover);
-  --stroke-l: var(--middle-stroke-l, var(--middle-stroke, transparent));
-  --stroke-r: var(--middle-stroke-r, var(--middle-stroke, transparent));
+  --fill: var(--tier-middle);
+  --fill-hover: var(--tier-middle-hover);
 }
 
 .tier-shape--foundation {
-  --l: var(--foundation-l);
-  --r: var(--foundation-r);
-  --l-hover: var(--foundation-l-hover);
-  --r-hover: var(--foundation-r-hover);
-  --stroke-l: var(--foundation-stroke-l, var(--foundation-stroke, transparent));
-  --stroke-r: var(--foundation-stroke-r, var(--foundation-stroke, transparent));
+  --fill: var(--tier-foundation);
+  --fill-hover: var(--tier-foundation-hover);
 }
 
-/* Row glyphs: the row's own tier in colour, the other two as a hairline silhouette. */
-.is-muted .tier-shape {
-  --l: transparent;
-  --r: transparent;
-  --stroke-l: var(--rule-strong);
-  --stroke-r: var(--rule-strong);
-}
-
-.tier-shape__fill-r {
-  fill: var(--r);
+.tier-shape__surface {
+  fill: var(--fill);
   transition: fill var(--dur) var(--ease);
 }
 
-.tier-shape__fill-l {
-  fill: var(--l);
-  transition: fill var(--dur) var(--ease);
-}
-
-.service:is(:hover, :focus-visible) .service__tier .tier-shape__fill-r {
-  fill: var(--r-hover);
-}
-
-.service:is(:hover, :focus-visible) .service__tier .tier-shape__fill-l {
-  fill: var(--l-hover);
-}
-
-.tier-shape__outline-l,
-.tier-shape__outline-r {
+.tier-shape__edge,
+.tier-shape__ring {
   fill: none;
+  stroke-linejoin: miter;
+  stroke-miterlimit: 8;
+}
+
+.tier-shape__edge {
   stroke-width: 1px;
 }
 
-.tier-shape__outline-l { stroke: var(--stroke-l); }
-.tier-shape__outline-r { stroke: var(--stroke-r); }
+.tier-shape__ring {
+  stroke-width: 1.75px;
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
 
-/* One paper hairline between bands, drawn once (by the band above). */
-.tier-shape__seam {
-  fill: none;
-  stroke: var(--paper);
-  stroke-width: 1.5px;
+.edge-stop-0 { stop-color: var(--gold-champagne); }
+.edge-stop-1 { stop-color: var(--gold-reflect); }
+.edge-stop-2 { stop-color: #D9B983; }
+.edge-stop-3 { stop-color: var(--gold); }
+.edge-stop-4 { stop-color: var(--gold-deep); }
+.edge-stop-5 { stop-color: #8A6438; }
+.edge-stop-6 { stop-color: var(--gold-dark); }
+
+.light-stop-0 { stop-color: #FFFFFF; stop-opacity: 0.16; }
+.light-stop-1 { stop-color: #FFFFFF; stop-opacity: 0; }
+.light-stop-2 { stop-color: #1C1A17; stop-opacity: 0.07; }
+
+.service:is(:hover, :focus-visible) .service__tier .tier-shape__surface {
+  fill: var(--fill-hover);
+}
+
+.service:is(:hover, :focus-visible) .service__tier .tier-shape__ring {
+  opacity: 1;
+}
+
+/* Row glyphs: the row's own level in colour, the other two as a hairline silhouette. */
+.is-muted .tier-shape__surface,
+.is-muted .tier-shape__light {
+  fill: transparent;
+}
+
+.is-muted .tier-shape__edge {
+  stroke: var(--rule-strong);
 }
 
 /* ── Service selector: desktop composition ────────────────────────────────────── */
@@ -317,28 +372,37 @@ a {
     display: none;
   }
 
-  /* The pyramid is sized from the content column (container query units) so the copy
-     column never drops below ≈ 470 px — the longest benefit line is 463 px wide. */
+  /* Shared measurements for the hero's alignment axis and the selector. Container query
+     units resolve against .container, which has the same width in both sections. */
+  .hero > .container,
   .selector-section > .container {
     container-type: inline-size;
   }
 
+  .hero__grid,
   .selector {
-    --pyr-w: clamp(360px, 100cqi - 494px, 520px);
-    --band-h: calc(var(--pyr-w) / 3.36); /* base ≈ 1.12 × total height */
-    --conn-gap: 24px;
+    --pyr-w: clamp(360px, 100cqi - 502px, 500px);
+    --conn-gap: 28px;
+    /* x where the company names start — also the epigraph's left edge */
+    --name-x: calc(var(--pyr-w) + var(--conn-gap));
+  }
+
+  .selector {
+    /* The pyramid is k × the rows' total height, centred on them. Each row's connector
+       sits at the row's vertical middle and lands on that row's own level. */
+    --k: 0.74;
+    position: relative;
     display: grid;
-    grid-template-rows: repeat(3, minmax(var(--band-h), 1fr));
-    margin-block: clamp(36px, 1.5rem + 1.5vw, 52px);
+    grid-template-rows: repeat(3, minmax(150px, 1fr));
+    margin-block: clamp(28px, 1rem + 1.2vw, 40px) clamp(32px, 1.25rem + 1.5vw, 48px);
   }
 
   .service {
-    position: relative;
     display: grid;
     grid-column: 1;
     grid-template-columns: var(--pyr-w) var(--conn-gap) minmax(0, 1fr);
-    /* Only the painted tier, the connector zone and the copy column are hit targets,
-       so the paper beside the narrow tiers is not part of a link. */
+    /* Only the painted level, the connector zone and the copy column are hit targets,
+       so the paper beside the narrow levels is not part of a link. */
     pointer-events: none;
   }
 
@@ -346,13 +410,23 @@ a {
     outline: none;
   }
 
-  .service--apex { grid-row: 1; }
-  .service--middle { grid-row: 2; }
-  .service--foundation { grid-row: 3; }
+  .service--apex { grid-row: 1; --row: 0; }
+  .service--middle { grid-row: 2; --row: 1; }
+  .service--foundation { grid-row: 3; --row: 2; }
 
+  /* Positioned against .selector (the anchors stay static), so the three levels form one
+     continuous triangle whatever height the copy rows take. */
   .service__tier {
-    display: block;
-    grid-area: 1 / 1;
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    width: var(--pyr-w);
+    top: calc((1 - var(--k)) * 50% + var(--row) * var(--k) * 100% / 3);
+    height: calc(var(--k) * 100% / 3);
+  }
+
+  .service:is(:hover, :focus-visible) .service__tier {
+    z-index: 2; /* its full gold ring draws over the neighbouring seams */
   }
 
   .service__tier svg {
@@ -365,31 +439,37 @@ a {
     pointer-events: auto;
   }
 
-  /* Full-height hit zone; the hairline itself is drawn at the band's vertical middle. */
+  /* --t: where the row's middle falls within the pyramid's height (0 = apex, 1 = base);
+     the right edge is then at (0.5 + 0.5·t) of the width. */
   .service__connector {
+    --t: calc(((var(--row) + 0.5) / 3 - (1 - var(--k)) / 2) / var(--k));
     position: relative;
     grid-area: 1 / 1 / auto / 3;
-    margin-left: calc(var(--pyr-w) * var(--edge) + 12px);
-    margin-right: 22px;
+    /* Starts 2 px inside the level (hidden beneath it), so the join is always clean. */
+    margin-left: calc(var(--pyr-w) * (0.5 + 0.5 * var(--t)) - 2px);
+    margin-right: 18px;
     pointer-events: auto;
   }
 
-  .service__connector::before {
+  .service__connector::before,
+  .service__connector::after {
     content: "";
     position: absolute;
     top: 50%;
     right: 0;
     left: 0;
     height: 1px;
-    background: var(--rule-strong);
-    transition:
-      left var(--dur) var(--ease),
-      background-color var(--dur) var(--ease);
+    background: var(--connector);
   }
 
-  .service:is(:hover, :focus-visible) .service__connector::before {
-    left: -8px;
-    background: var(--bronze);
+  .service__connector::after {
+    background: var(--metal-line);
+    opacity: 0;
+    transition: opacity var(--dur) var(--ease);
+  }
+
+  .service:is(:hover, :focus-visible) .service__connector::after {
+    opacity: 1;
   }
 
   .service__text {
@@ -405,13 +485,15 @@ a {
     isolation: isolate;
     display: grid;
     width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
   }
 
-  /* Hover tint sits outside the panel's box so it never moves the text. */
+  /* Hover wash sits outside the panel's box, so nothing moves; focus rings it. */
   .service__panel::before {
     content: "";
     position: absolute;
-    inset: -12px;
+    inset: -12px -14px;
     z-index: -1;
     border-radius: 2px;
     background: transparent;
@@ -419,61 +501,20 @@ a {
   }
 
   .service:is(:hover, :focus-visible) .service__panel::before {
-    background: color-mix(in srgb, var(--bronze-wash) 60%, transparent);
+    background: var(--tint);
   }
 
-  .service:focus-visible .service__panel {
-    outline: 2px solid var(--bronze-ink);
-    outline-offset: 12px;
+  .service:focus-visible .service__panel::before {
+    outline: 2px solid var(--gold-dark);
   }
 
-  /* 1000–1279: the logo sits on the name's line, so the copy keeps a readable measure.
-     A fixed logo slot (the 32 px Guardian logos are 118 px wide) keeps the names aligned. */
-  .service__panel {
-    grid-template-columns: 119px minmax(0, 1fr);
-    column-gap: 16px;
-    align-items: center;
-  }
+  /* 1000–1279: the logo heads the copy (stacked), as on mobile. */
+  .service__brand { margin-bottom: 10px; }
 
-  .service__brand { grid-area: 1 / 1; }
-  .service__copy { display: contents; }
-  .service__name { grid-area: 1 / 2; }
+  .service__logo img { width: auto; height: 34px; }
+  .service__logo--merlin img { height: 36px; }
 
-  .service__benefit,
-  .service__description,
-  .service__cta {
-    grid-column: 1 / -1;
-  }
-
-  .service__benefit { margin-top: 8px; }
-  .service__cta { justify-self: start; margin-top: 10px; }
-
-  .service__logo img { height: 32px; }
-  .service__logo--merlin img { height: 34px; }
-}
-
-/* ≥ 1280: a logo column that the connector runs into, centred on the band's middle. */
-@media (min-width: 1280px) {
-  .selector {
-    --pyr-w: clamp(480px, 100cqi - 650px, 550px);
-    --logo-col: 134px;
-  }
-
-  .service__panel {
-    grid-template-columns: var(--logo-col) minmax(0, 1fr);
-    column-gap: 24px;
-  }
-
-  .service__copy { display: block; }
-
-  .service__benefit { margin-top: 6px; }
-
-  .service__logo img { height: 36px; }
-  .service__logo--merlin img { height: 38px; }
-}
-
-@media (min-width: 1000px) {
-  /* One orchestrated moment: the tiers settle in from the foundation upward. */
+  /* One orchestrated moment: the levels settle in from the foundation upward. */
   @media (prefers-reduced-motion: no-preference) {
     .service__tier svg {
       animation: tier-settle 280ms var(--ease) both;
@@ -482,6 +523,33 @@ a {
     .service--middle .service__tier svg { animation-delay: 60ms; }
     .service--apex .service__tier svg { animation-delay: 120ms; }
   }
+}
+
+/* ≥ 1280: a logo column the connector runs into, centred on the row's middle. */
+@media (min-width: 1280px) {
+  .hero__grid,
+  .selector {
+    --pyr-w: clamp(400px, 100cqi - 720px, 480px);
+    --logo-slot: 166px;
+    --slot-gap: 36px;
+    --name-x: calc(var(--pyr-w) + var(--conn-gap) + var(--logo-slot) + var(--slot-gap));
+  }
+
+  .selector {
+    --k: 0.82;
+  }
+
+  .service__panel {
+    grid-template-columns: var(--logo-slot) minmax(0, 1fr);
+    column-gap: var(--slot-gap);
+  }
+
+  .service__brand { margin-bottom: 0; }
+
+  .service__text { padding-block: 14px; }
+
+  .service__logo img { height: 44px; }
+  .service__logo--merlin img { height: 46px; }
 }
 
 @keyframes tier-settle {
@@ -495,9 +563,10 @@ a {
 @media (max-width: 999.98px) {
   .selector-overview {
     display: block;
-    width: clamp(140px, 40vw, 180px);
+    width: clamp(150px, 42vw, 190px);
     height: auto;
     margin: 28px 0 32px;
+    overflow: visible;
   }
 
   .selector {
@@ -520,21 +589,23 @@ a {
     display: flex;
     align-items: center;
     gap: 16px;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
   }
 
   .service__glyph {
     flex: none;
-    width: 32px;
+    width: 34px;
     height: auto;
+    overflow: visible;
   }
 
   .service__logo img {
-    height: 30px;
+    width: auto;
+    height: 36px;
   }
 
   .service__logo--merlin img {
-    height: 32px;
+    height: 38px;
   }
 
   .service:focus-visible {
@@ -551,19 +622,19 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px 32px;
-  padding-block: 24px;
+  gap: 12px 40px;
+  padding-block: 26px;
 }
 
 .site-footer__logo img {
   width: auto;
-  height: 28px;
+  height: 32px;
 }
 
 .site-footer__links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 28px;
+  gap: 0 32px;
 }
 
 .site-footer__links a {
@@ -571,10 +642,12 @@ a {
   align-items: center;
   min-width: 44px;
   min-height: 44px;
-  color: var(--ink-2);
+  padding-top: 2px; /* puts the text baseline on the logo's GUARDIAN baseline */
+  color: var(--ink-3);
   font-size: var(--fs-small);
+  letter-spacing: 0.01em;
   text-decoration: underline 1px transparent;
-  text-underline-offset: 4px;
+  text-underline-offset: 5px;
   transition:
     color var(--dur) var(--ease),
     text-decoration-color var(--dur) var(--ease);
@@ -582,39 +655,45 @@ a {
 
 .site-footer__links a:hover {
   color: var(--ink);
-  text-decoration-color: currentColor;
+  text-decoration-color: var(--gold);
 }
 
 /* ── Header, hero, footer: breakpoints ────────────────────────────────────────── */
 @media (min-width: 1000px) {
+  /* The epigraph's left edge sits on the same vertical axis as the company names below,
+     and its last line on the subhead's last line. */
   .hero__grid {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    column-gap: 24px;
+    grid-template-columns: var(--name-x) minmax(0, 1fr);
     align-items: end;
+    row-gap: 20px;
   }
 
   .hero__main {
-    grid-column: 1 / span 8;
+    display: contents;
+  }
+
+  .hero__title {
+    grid-area: 1 / 1 / auto / -1;
+  }
+
+  .hero__subhead {
+    grid-area: 2 / 1;
+    max-width: min(34em, 100% - 48px);
+    margin-top: 0;
   }
 
   .epigraph {
-    grid-column: 9 / span 4; /* 1000–1279: three columns would break the quote */
-  }
-}
-
-@media (min-width: 1280px) {
-  .epigraph {
-    grid-column: 10 / span 3;
+    grid-area: 2 / 2;
   }
 }
 
 @media (max-width: 999.98px) {
   .site-header__inner {
-    min-height: 64px;
+    min-height: 68px;
   }
 
   .site-header__logo img {
-    height: 30px;
+    height: 34px;
   }
 
   .site-footer__inner {
@@ -623,7 +702,7 @@ a {
   }
 
   .site-footer__logo img {
-    height: 26px;
+    height: 30px;
   }
 
   .site-footer__links {
@@ -631,7 +710,7 @@ a {
   }
 }
 
-/* ── Reduced motion: no entrance, no arrow travel, colour changes near-instant ── */
+/* ── Reduced motion: no entrance, no sweeps, no arrow travel; colour changes near-instant ── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -642,9 +721,5 @@ a {
 
   .service:is(:hover, :focus-visible) .service__arrow {
     transform: none;
-  }
-
-  .service:is(:hover, :focus-visible) .service__connector::before {
-    left: 0;
   }
 }

@@ -5,7 +5,7 @@
 // 2. Removes the client <script> (its only job was to make Vite bundle the CSS and
 //    fonts) and deletes the resulting empty JS chunk — production ships no JavaScript.
 // 3. Copies images emitted by the SSR build into dist/assets (same hashed names).
-// 4. Preloads the latin Source Serif 4 file used by the headline.
+// 4. Preloads the latin Cinzel and Lora files.
 import { copyFileSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -40,14 +40,16 @@ if (existsSync(ssrAssets)) {
   }
 }
 
-// Preload the headline serif (latin, upright).
-const serif = readdirSync(path.join(dist, "assets")).find((f) =>
-  /^source-serif-4-latin-opsz-normal-.*\.woff2$/.test(f),
+// Preload the two latin files every visit needs: Cinzel (hero) and Lora (text).
+const assetFiles = readdirSync(path.join(dist, "assets"));
+const preloaded = [/^cinzel-latin-wght-normal-.*\.woff2$/, /^lora-latin-wght-normal-.*\.woff2$/]
+  .map((re) => assetFiles.find((f) => re.test(f)))
+  .filter(Boolean);
+if (preloaded.length !== 2) throw new Error("Expected Cinzel and Lora latin files to preload");
+html = html.replace(
+  "<!--preload-fonts-->",
+  preloaded.map((f) => `<link rel="preload" href="/assets/${f}" as="font" type="font/woff2" crossorigin>`).join("\n    "),
 );
-const preload = serif
-  ? `<link rel="preload" href="/assets/${serif}" as="font" type="font/woff2" crossorigin>`
-  : "";
-html = html.replace("<!--preload-fonts-->", preload);
 
 // Every referenced /assets/ file must exist.
 const missing = [...html.matchAll(/\/assets\/[^"' )]+/g)]
@@ -58,4 +60,4 @@ if (/<script/i.test(html)) throw new Error("A <script> tag survived prerendering
 
 writeFileSync(path.join(dist, "index.html"), html);
 rmSync(distSsr, { recursive: true, force: true });
-console.log(`prerendered dist/index.html (${(html.length / 1024).toFixed(1)} KB, no JS; preload: ${serif ?? "none"})`);
+console.log(`prerendered dist/index.html (${(html.length / 1024).toFixed(1)} KB, no JS; preload: ${preloaded.join(", ")})`);

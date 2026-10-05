@@ -10,14 +10,14 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dir = path.join(root, "src/assets/logos");
 const data = (f) => `data:image/webp;base64,${readFileSync(path.join(dir, f)).toString("base64")}`;
 const dims = {
-  parent: [4106, 1044], merlin: [2636, 846], medicalAdvisory: [1102, 298], civilServices: [1101, 297],
+  parent: [4088, 1026], merlin: [2620, 830], medicalAdvisory: [1096, 292], civilServices: [1095, 291],
 };
 const img = (key, h, label) => {
   const w = Math.round((h * dims[key][0]) / dims[key][1]);
   return `<figure><div class="frame"><img src="${data(`${key}@3x.webp`)}" width="${w}" height="${h}" alt=""></div><figcaption>${label ?? key} · ${h}px tall · ${w}px wide</figcaption></figure>`;
 };
 const html = `<!doctype html><meta charset="utf-8"><style>
-body{margin:0;padding:32px;background:#FAF9F6;font:13px/1.4 system-ui,sans-serif;color:#5D646C}
+body{margin:0;padding:32px;background:#FAF8F4;font:13px/1.4 system-ui,sans-serif;color:#5D646C}
 h2{font:600 14px system-ui;color:#23262B;margin:28px 0 12px}
 .row{display:flex;gap:40px;align-items:center;flex-wrap:wrap}
 figure{margin:0}.frame{outline:1px dashed #DDD7CD;display:inline-block;line-height:0}
@@ -26,13 +26,13 @@ figcaption{margin-top:6px}
 .line .base{height:1px;background:#9B6B3F}
 </style>
 <h2>Header + footer — parent logo (light surface)</h2>
-<div class="row">${img("parent", 40, "parent, header desktop")}${img("parent", 30, "parent, header mobile")}${img("parent", 28, "parent, footer")}</div>
-<h2>Service rows — chosen sizes, side by side (dashed box = trimmed image incl. 1.5 % margin)</h2>
-<div class="line">${img("merlin", 38, "Merlin")}${img("medicalAdvisory", 36, "Medical Advisory")}${img("civilServices", 36, "Civil Services")}</div>
-<h2>Merlin candidates against Medical Advisory at 36 px</h2>
-<div class="row">${[34, 36, 38, 40, 42, 44].map((h) => img("merlin", h, "Merlin")).join("")}${img("medicalAdvisory", 36, "Medical Advisory")}</div>
+<div class="row">${img("parent", 46, "parent, header desktop")}${img("parent", 34, "parent, header mobile")}${img("parent", 32, "parent, footer")}</div>
+<h2>Service rows ≥ 1280 px — side by side (dashed box = trimmed image incl. 0.6 % margin)</h2>
+<div class="line">${img("merlin", 46, "Merlin")}${img("medicalAdvisory", 44, "Medical Advisory")}${img("civilServices", 44, "Civil Services")}</div>
+<h2>1000–1279 px rows</h2>
+<div class="line">${img("merlin", 36, "Merlin")}${img("medicalAdvisory", 34, "Medical Advisory")}${img("civilServices", 34, "Civil Services")}</div>
 <h2>Mobile sizes</h2>
-<div class="line">${img("merlin", 32, "Merlin")}${img("medicalAdvisory", 30, "Medical Advisory")}${img("civilServices", 30, "Civil Services")}</div>
+<div class="line">${img("merlin", 38, "Merlin")}${img("medicalAdvisory", 36, "Medical Advisory")}${img("civilServices", 36, "Civil Services")}</div>
 `;
 const scratch = path.join(root, "docs/screenshots");
 mkdirSync(scratch, { recursive: true });

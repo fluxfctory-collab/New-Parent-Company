@@ -1,20 +1,69 @@
-/* Self-hosted variable fonts (no third-party CDN). Latin subsets load on demand via unicode-range. */
-@import "@fontsource-variable/source-serif-4/opsz.css";
-@import "@fontsource-variable/source-serif-4/opsz-italic.css";
-@import "@fontsource-variable/inter/wght.css";
+/*
+ * Two webfont families, both self-hosted (no CDN), both font-display: swap.
+ *   Cinzel — display: hero, section heading, company names, QME.
+ *   Lora   — text: subhead, epigraph (italic), benefit lines, descriptions, CTAs, footer.
+ * Only the subsets needed for the page's characters load (unicode-range).
+ */
+@import "@fontsource-variable/cinzel/wght.css";
+@import "@fontsource-variable/lora/wght.css";
+@import "@fontsource-variable/lora/wght-italic.css";
 
 /*
- * The Google-derived latin subsets above omit U+2192 (→), which appears in the
- * client's CTA copy. This 1.5 KB file is Inter 4.1 (rsms/inter, OFL) subset to
- * that single glyph, so the arrow renders in Inter instead of a system fallback.
- * Regenerate: pyftsubset InterVariable.woff2 --unicodes=U+2192 --flavor=woff2 \
- *   --layout-features='' --no-hinting --output-file=inter-arrow-wght.woff2
+ * Neither Cinzel nor Lora contains U+2192 (→), which is part of the client's CTA copy.
+ * This 1.5 KB file holds that single glyph (from Inter 4.1, OFL — licence alongside)
+ * and is declared inside the Lora family, so the arrow renders identically on every
+ * platform instead of falling back to whatever system font happens to have it.
+ * No text is set in a third family.
  */
 @font-face {
-  font-family: "Inter Variable";
+  font-family: "Lora Variable";
   font-style: normal;
   font-display: swap;
   font-weight: 100 900;
   src: url("../assets/fonts/inter-arrow-wght.woff2") format("woff2");
   unicode-range: U+2192;
+}
+
+/*
+ * Metric-matched fallbacks for the swap period, so line breaks and line heights barely
+ * move when the webfonts arrive. Values: Capsize metrics (average character width,
+ * ascent, descent) — size-adjust = webfont avg width ÷ fallback avg width.
+ * Regenerate the numbers with `node scripts/font-fallbacks.mjs`.
+ * Georgia first (macOS, Windows); Times New Roman / Liberation Serif (metric-compatible)
+ * for everything else.
+ */
+@font-face {
+  font-family: "Lora Fallback";
+  src: local("Georgia");
+  size-adjust: 104.98%;
+  ascent-override: 95.83%;
+  descent-override: 26.1%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Lora Fallback Times";
+  src: local("Times New Roman"), local("TimesNewRomanPSMT"), local("Liberation Serif"), local("LiberationSerif");
+  size-adjust: 115.2%;
+  ascent-override: 87.33%;
+  descent-override: 23.78%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Cinzel Fallback";
+  src: local("Georgia");
+  size-adjust: 124.72%;
+  ascent-override: 78.26%;
+  descent-override: 29.83%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Cinzel Fallback Times";
+  src: local("Times New Roman"), local("TimesNewRomanPSMT"), local("Liberation Serif"), local("LiberationSerif");
+  size-adjust: 136.86%;
+  ascent-override: 71.31%;
+  descent-override: 27.18%;
+  line-gap-override: 0%;
 }

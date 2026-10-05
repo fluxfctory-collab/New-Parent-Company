@@ -4,8 +4,9 @@
 //
 // For each logo: find the artwork box with an alpha threshold (alpha > 8 — the
 // 1920×1080 sub-brand files carry stray alpha-1/2 pixels across the whole canvas,
-// so a plain trim returns the full canvas), add a safety margin of 1.5 % of the
-// artwork height, check that ≥ 99.9 % of the original alpha mass survives, then
+// so a plain trim returns the full canvas), add a safety margin of 0.6 % of the
+// artwork height (enough for anti-aliased edges, no visible padding), check that
+// ≥ 99.9 % of the original alpha mass survives, then
 // export lossless WebP at 2× and 3× the largest display height plus a PNG fallback.
 // Also writes the favicon set from the parent helmet mark, and
 // src/assets/logos/logos.ts with the exact intrinsic sizes for width/height attributes.
@@ -19,15 +20,15 @@ const BRIEF = path.join(root, "_brief");
 const OUT = path.join(root, "src", "assets", "logos");
 const PUBLIC = path.join(root, "public");
 const ALPHA_THRESHOLD = 8;
-const MARGIN_RATIO = 0.015;
+const MARGIN_RATIO = 0.006;
 const MIN_MASS_RETAINED = 0.999;
 
 /** Largest CSS height each logo is displayed at (see src/styles/global.css). */
 const LOGOS = [
-  { key: "parent", file: "logo Update 2 background expanded (2).png", maxDisplayHeight: 40, alt: "The Guardian Group" },
-  { key: "merlin", file: "Final_logo_01-01.png", maxDisplayHeight: 38 },
-  { key: "medicalAdvisory", file: "Medical Advisory Bronze Inverted - Transparent (1).png", maxDisplayHeight: 36 },
-  { key: "civilServices", file: "Civil Services Gray.White-Transparent.png", maxDisplayHeight: 36 },
+  { key: "parent", file: "logo Update 2 background expanded (2).png", maxDisplayHeight: 46, alt: "The Guardian Group" },
+  { key: "merlin", file: "Final_logo_01-01.png", maxDisplayHeight: 46 },
+  { key: "medicalAdvisory", file: "Medical Advisory Bronze Inverted - Transparent (1).png", maxDisplayHeight: 44 },
+  { key: "civilServices", file: "Civil Services Gray.White-Transparent.png", maxDisplayHeight: 44 },
 ];
 
 async function readRaw(file) {
@@ -137,8 +138,8 @@ for (const logo of LOGOS) {
   // iOS paints transparent touch icons on black, so this one sits on the page's paper colour.
   await sharp(square)
     .resize(152, 152, { kernel: "lanczos3" })
-    .extend({ top: 14, bottom: 14, left: 14, right: 14, background: "#FAF9F6" })
-    .flatten({ background: "#FAF9F6" })
+    .extend({ top: 14, bottom: 14, left: 14, right: 14, background: "#FAF8F4" })
+    .flatten({ background: "#FAF8F4" })
     .png({ compressionLevel: 9 })
     .toFile(path.join(PUBLIC, "apple-touch-icon.png"));
   // favicon.ico with embedded 16 px and 32 px PNG images.

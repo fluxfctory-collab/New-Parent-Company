@@ -16,10 +16,10 @@ import civilServicesWebp3x from "./civilServices@3x.webp";
 import civilServicesPng from "./civilServices@2x.png";
 
 export const logos = {
-  parent: { webp2x: parentWebp2x, webp3x: parentWebp3x, png: parentPng, width: 4106, height: 1044 },
-  merlin: { webp2x: merlinWebp2x, webp3x: merlinWebp3x, png: merlinPng, width: 2636, height: 846 },
-  medicalAdvisory: { webp2x: medicalAdvisoryWebp2x, webp3x: medicalAdvisoryWebp3x, png: medicalAdvisoryPng, width: 1102, height: 298 },
-  civilServices: { webp2x: civilServicesWebp2x, webp3x: civilServicesWebp3x, png: civilServicesPng, width: 1101, height: 297 },
+  parent: { webp2x: parentWebp2x, webp3x: parentWebp3x, png: parentPng, width: 4088, height: 1026 },
+  merlin: { webp2x: merlinWebp2x, webp3x: merlinWebp3x, png: merlinPng, width: 2620, height: 830 },
+  medicalAdvisory: { webp2x: medicalAdvisoryWebp2x, webp3x: medicalAdvisoryWebp3x, png: medicalAdvisoryPng, width: 1096, height: 292 },
+  civilServices: { webp2x: civilServicesWebp2x, webp3x: civilServicesWebp3x, png: civilServicesPng, width: 1095, height: 291 },
 } as const;
 
 export type LogoKey = keyof typeof logos;

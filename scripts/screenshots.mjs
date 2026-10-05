@@ -75,16 +75,34 @@ try {
       },
     });
   }
-  if (!only || only === "palettes") {
-    for (const pal of ["a", "b", "c"]) {
-      await shot(`palette-${pal}-1440`, {
-        width: 1440, height: 900, full: false,
-        prep: async (p) => {
-          await p.evaluate((v) => document.querySelector(".selector-section").setAttribute("data-palette", v), pal);
-          await p.evaluate(() => window.scrollTo(0, document.querySelector(".selector-section").offsetTop - 24));
-        },
-      });
-    }
+  if (!only || only === "details") {
+    // 2× close-ups of the finishing details.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1300 }, deviceScaleFactor: 2, reducedMotion: "no-preference" });
+    await page.route(/^https?:\/\/(?!localhost)/, (r) => r.abort());
+    await page.goto(url);
+    await page.evaluate(() => document.fonts.ready);
+    const around = async (sel, pad = 24) => {
+      const b = await page.locator(sel).boundingBox();
+      return { x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad, height: b.height + 2 * pad };
+    };
+    // QME at rest (after the load sweep), then frozen mid-sweep.
+    await page.waitForTimeout(2600);
+    await page.screenshot({ path: path.join(out, `${prefix}-detail-qme-rest.png`), clip: await around("header .qme", 20) });
+    await page.evaluate(() => {
+      const a = document.getAnimations().find((x) => x.animationName === "metal-sweep");
+      a.currentTime = 900 + 1500 * 0.42;
+      a.pause();
+    });
+    await page.screenshot({ path: path.join(out, `${prefix}-detail-qme-sweep.png`), clip: await around("header .qme", 20) });
+    // The pyramid and its connectors, at rest.
+    await page.mouse.move(5, 5);
+    const sel = await page.locator(".selector").boundingBox();
+    await page.screenshot({ path: path.join(out, `${prefix}-detail-pyramid.png`), clip: { x: sel.x - 16, y: sel.y - 8, width: 720, height: sel.height + 16 } });
+    // A service row's CTA on hover.
+    await page.locator("a.service--middle .service__text").hover();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: path.join(out, `${prefix}-detail-row-hover.png`), clip: await around("a.service--middle .service__panel", 28) });
+    await page.close();
   }
 } finally {
   await browser.close();

@@ -1,84 +1,93 @@
-import type { CSSProperties } from "react";
 import type { LogoKey } from "../assets/logos/logos";
 import { content, type Service, type ServiceId, type Tier } from "../content";
 import { Logo } from "./Logo";
 import { QmeLink } from "./QmeLink";
 
 /*
- * Pyramid geometry, in a 600×100 viewBox per band. The three bands share one width
+ * Pyramid geometry, in a 600×100 viewBox per level. The three levels share one width
  * and an equal height, so these points form a single continuous apex-up triangle
- * (base = 600, each band 100 high). Each shape is drawn as a full polygon in the
- * right-half colour with the left half on top, so palettes A/B (one colour) have no
- * seam and palette C gets its bronze/graphite split from the same markup.
+ * (base = 600, each level 100 high). Each level is one coherent surface:
+ *   surface — the level's tone,
+ *   light   — a faint left-to-right falloff shared by all three (no extra bands),
+ *   edge    — fine metallic gold, drawn once per line (a level draws its sides and its
+ *             bottom; its top is the bottom of the level above),
+ *   ring    — the full perimeter in gold, shown on hover/focus.
  */
-type Shape = { full: string; left: string; outlineL: string; outlineR: string; seam?: string };
+type Shape = { surface: string; edge: string; ring: string };
 
 const SHAPES: Record<Tier, Shape> = {
   apex: {
-    full: "300,0 400,100 200,100",
-    left: "300,0 300,100 200,100",
-    outlineL: "M200,100 L300,0",
-    outlineR: "M300,0 L400,100",
-    seam: "M200,100 L400,100",
+    surface: "300,0 400,100 200,100",
+    edge: "M200,100 L300,0 L400,100 Z",
+    ring: "M200,100 L300,0 L400,100 Z",
   },
   middle: {
-    full: "200,0 400,0 500,100 100,100",
-    left: "200,0 300,0 300,100 100,100",
-    outlineL: "M100,100 L200,0",
-    outlineR: "M400,0 L500,100",
-    seam: "M100,100 L500,100",
+    surface: "200,0 400,0 500,100 100,100",
+    edge: "M200,0 L100,100 L500,100 L400,0",
+    ring: "M200,0 L400,0 L500,100 L100,100 Z",
   },
   foundation: {
-    full: "100,0 500,0 600,100 0,100",
-    left: "100,0 300,0 300,100 0,100",
-    outlineL: "M0,100 L100,0 M0,100 L300,100",
-    outlineR: "M500,0 L600,100 M300,100 L600,100",
+    surface: "100,0 500,0 600,100 0,100",
+    edge: "M100,0 L0,100 L600,100 L500,0",
+    ring: "M100,0 L500,0 L600,100 L0,100 Z",
   },
 };
 
-/** x of each band's right edge at mid-height, as a fraction of the pyramid width. */
-const EDGE_AT_MID: Record<Tier, number> = { apex: 350 / 600, middle: 450 / 600, foundation: 550 / 600 };
-
-/** Top-to-bottom drawing order for the whole-pyramid figures. */
+/** Top-to-bottom order of the levels; also each level's offset within the whole pyramid. */
 const STACK: Tier[] = ["apex", "middle", "foundation"];
 
+/* Gold along the pyramid's height (0 = apex tip, 1 = base): light catches the capstone,
+   then the metal deepens toward the foundation. */
+const EDGE_STOPS = [0, 0.06, 0.14, 0.24, 0.36, 0.7, 1];
+
 const LOGO: Record<ServiceId, { key: LogoKey; height: number }> = {
-  merlin: { key: "merlin", height: 38 },
-  "medical-advisory": { key: "medicalAdvisory", height: 36 },
-  "civil-services": { key: "civilServices", height: 36 },
+  merlin: { key: "merlin", height: 46 },
+  "medical-advisory": { key: "medicalAdvisory", height: 44 },
+  "civil-services": { key: "civilServices", height: 44 },
 };
 
-function TierShape({ tier }: { tier: Tier }) {
+/** One level. `uid` keeps gradient ids unique when several pyramids share the page. */
+function TierShape({ tier, uid }: { tier: Tier; uid: string }) {
   const s = SHAPES[tier];
+  const row = STACK.indexOf(tier);
+  const edgeId = `${uid}-${tier}-edge`;
+  const lightId = `${uid}-${tier}-light`;
   return (
     <g className={`tier-shape tier-shape--${tier}`}>
-      <polygon className="tier-shape__fill-r" points={s.full} />
-      <polygon className="tier-shape__fill-l" points={s.left} />
-      <path className="tier-shape__outline-l" d={s.outlineL} vectorEffect="non-scaling-stroke" />
-      <path className="tier-shape__outline-r" d={s.outlineR} vectorEffect="non-scaling-stroke" />
-      {s.seam && <path className="tier-shape__seam" d={s.seam} vectorEffect="non-scaling-stroke" />}
+      <defs>
+        {/* User space spans the whole pyramid (y −100·row … 300 − 100·row in this level's
+            units), so the gold reads as one continuous piece of metal across the levels. */}
+        <linearGradient id={edgeId} gradientUnits="userSpaceOnUse" x1="0" y1={-100 * row} x2="0" y2={300 - 100 * row}>
+          {EDGE_STOPS.map((offset, i) => (
+            <stop key={offset} offset={offset} className={`edge-stop-${i}`} />
+          ))}
+        </linearGradient>
+        <linearGradient id={lightId} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="600" y2="0">
+          <stop offset="0" className="light-stop-0" />
+          <stop offset="0.55" className="light-stop-1" />
+          <stop offset="1" className="light-stop-2" />
+        </linearGradient>
+      </defs>
+      <polygon className="tier-shape__surface" points={s.surface} />
+      <polygon className="tier-shape__light" points={s.surface} fill={`url(#${lightId})`} />
+      <path className="tier-shape__edge" d={s.edge} stroke={`url(#${edgeId})`} vectorEffect="non-scaling-stroke" />
+      <path className="tier-shape__ring" d={s.ring} stroke={`url(#${edgeId})`} vectorEffect="non-scaling-stroke" />
     </g>
   );
 }
 
-/** The whole pyramid in one SVG: the mobile overview, or a row glyph with one tier lit. */
-function Pyramid({ className, active }: { className: string; active?: Tier }) {
+/** The whole pyramid in one SVG: the mobile overview, or a row glyph with one level lit. */
+function Pyramid({ className, uid, active }: { className: string; uid: string; active?: Tier }) {
   const band = 600 / 1.12 / 3; // base ≈ 1.12 × height, like the client diagram
   return (
-    <svg
-      className={className}
-      viewBox={`0 0 600 ${Math.round(band * 3)}`}
-      aria-hidden="true"
-      focusable="false"
-      overflow="visible"
-    >
+    <svg className={className} viewBox={`0 0 600 ${Math.round(band * 3)}`} aria-hidden="true" focusable="false">
       {STACK.map((tier, i) => (
         <g
           key={tier}
           transform={`translate(0 ${(i * band).toFixed(2)}) scale(1 ${(band / 100).toFixed(4)})`}
           className={active && active !== tier ? "is-muted" : undefined}
         >
-          <TierShape tier={tier} />
+          <TierShape tier={tier} uid={uid} />
         </g>
       ))}
     </svg>
@@ -98,20 +107,19 @@ function ServiceRow({ service }: { service: Service }) {
       href={href}
       aria-labelledby={labelledBy}
       aria-describedby={`${ids.benefit} ${ids.description}`}
-      style={{ "--edge": EDGE_AT_MID[tier].toFixed(4) } as CSSProperties}
     >
       <span className="service__tier" aria-hidden="true">
         <svg viewBox="0 0 600 100" preserveAspectRatio="none" overflow="visible" focusable="false">
-          <TierShape tier={tier} />
+          <TierShape tier={tier} uid={`${id}-level`} />
         </svg>
       </span>
       <span className="service__connector" aria-hidden="true" />
       {/* __text is the full-height hit area of the row's right column; __panel is the
-          visible block that takes the hover tint and the focus ring. */}
+          visible block that takes the hover wash and the focus ring. */}
       <div className="service__text">
         <div className="service__panel">
           <div className="service__brand">
-            <Pyramid className="service__glyph" active={tier} />
+            <Pyramid className="service__glyph" uid={`${id}-glyph`} active={tier} />
             <Logo name={logo.key} height={logo.height} alt="" className={`service__logo service__logo--${id}`} />
           </div>
           <div className="service__copy">
@@ -129,13 +137,13 @@ function ServiceRow({ service }: { service: Service }) {
   );
 }
 
-export function ServiceSelector({ showQme, palette = "c" }: { showQme: boolean; palette?: "a" | "b" | "c" }) {
+export function ServiceSelector({ showQme }: { showQme: boolean }) {
   const { heading, closingLine } = content.selector;
   return (
-    <section className="selector-section" aria-labelledby="selector-title" data-palette={palette}>
+    <section className="selector-section" aria-labelledby="selector-title">
       <div className="container">
         <h2 id="selector-title" className="selector-section__title">{heading}</h2>
-        <Pyramid className="selector-overview" />
+        <Pyramid className="selector-overview" uid="overview" />
         {/* DOM order is foundation-first (Merlin → Medical Advisory → Civil Services);
             desktop CSS stacks the rows bottom-to-top with grid-row. */}
         <div className="selector">

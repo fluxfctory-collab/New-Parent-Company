@@ -1,95 +1,88 @@
 /*
  * Design tokens. Contrast ratios measured with scripts/contrast.mjs against --paper.
- * Any value changed from the brief's starting set is noted in HANDOVER.md.
+ * Gold system adapted from the Guardian Civil Services reference (#B8915A accent).
  */
 :root {
   /* surfaces */
-  --paper: #FAF9F6;
-  --surface: #FFFFFF;
-  --bronze-wash: #F0E8DC;
+  --paper: #FAF8F4;          /* warm white canvas */
+  --paper-warm: #F4EDE1;     /* faint warm variation (background depth only) */
+  --tint: rgb(232 210 168 / 0.17); /* hover wash behind a service's copy */
 
   /* ink */
-  --ink: #23262B;          /* 14.4:1 on paper */
-  --ink-2: #5D646C;        /* 5.7:1 on paper */
-  --slate: #303942;
+  --ink: #242629;            /* 14.30 : 1 — headings, benefit lines */
+  --ink-2: #565B61;          /*  6.46 : 1 — supporting text */
+  --ink-3: #4A4F55;          /*  8.0  : 1 — footer links */
 
-  /* bronze: decorative vs text */
-  --bronze: #9B6B3F;       /* rules, strokes, fills only (4.37:1, not for small text) */
-  --bronze-ink: #875A2E;   /* bronze text: 5.65:1 on paper, 4.89:1 on wash */
-  --bronze-light: #C98A55; /* logo highlight; decorative only */
-
-  /* graphite from the parent wordmark */
-  --graphite: #3A4046;
-  --graphite-2: #74767E;
+  /* gold — decorative (never small text on paper) */
+  --gold: #B8915A;           /* reference gold, 2.74 : 1 */
+  --gold-mid: #C49C61;
+  --gold-champagne: #E8D2A8;
+  --gold-reflect: #FFF1CE;
+  --gold-deep: #9C7845;      /* 3.82 : 1 — strokes that must read on paper */
+  /* gold — text */
+  --gold-dark: #71502C;      /* 6.86 : 1 — CTAs, attribution accents, borders */
 
   /* lines */
-  --rule: #DDD7CD;
-  --rule-strong: #C9BFAF;
+  --rule: #E4DCCE;           /* hairline separators */
+  --rule-strong: #CDBFA8;
+  --connector: #D2C3A8;      /* connector hairline at rest */
+
+  /*
+   * Brushed metal. One narrow reflective band above the middle, darker edges,
+   * warm midtones — no alternating stripes.
+   */
+  --metal-surface: linear-gradient(
+    180deg,
+    #A9844E 0%,
+    #C49C61 14%,
+    #DDBF8A 30%,
+    #F3E1BB 40%,
+    #FFF1CE 45%,
+    #EBD3A4 51%,
+    #D2AE74 66%,
+    #C29A60 84%,
+    #A47F4A 100%
+  );
+  /* Hairlines: dark ends and one soft glint toward the left third. The glint stays well
+     darker than the canvas, so a 1 px rule never reads as broken. */
+  --metal-line: linear-gradient(
+    90deg,
+    #71502C 0%,
+    #9C7845 16%,
+    #C9A46C 32%,
+    #DDBE88 40%,
+    #C49C61 50%,
+    #A47F4A 72%,
+    #7A5730 100%
+  );
+
+  /* pyramid surfaces (one coherent surface per level; deepening toward the apex) */
+  --tier-foundation: #ECE6DB;
+  --tier-foundation-hover: #E4DCCD;
+  --tier-middle: #B9B6AE;
+  --tier-middle-hover: #ABA79E;
+  --tier-apex: #3B4048;
+  --tier-apex-hover: #30353C;
 
   /* layout */
   --content-max: 1200px;
   --gutter: clamp(20px, 4vw, 48px);
 
   /* motion */
-  --dur: 200ms;
+  --dur: 220ms;
   --ease: cubic-bezier(.2, .7, .2, 1);
 
   /* type */
-  --serif: "Source Serif 4 Variable", "Source Serif 4", Georgia, "Times New Roman", serif;
-  --sans: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --display: "Cinzel Variable", "Cinzel Fallback", "Cinzel Fallback Times", Georgia, "Times New Roman", serif;
+  --text: "Lora Variable", "Lora Fallback", "Lora Fallback Times", Georgia, "Times New Roman", serif;
 
-  --fs-h1: clamp(2.125rem, 1.2rem + 3.4vw, 4.25rem);
-  --fs-subhead: clamp(1.0625rem, 1rem + .35vw, 1.25rem);
-  --fs-epigraph: clamp(1.125rem, 1rem + .5vw, 1.375rem);
-  --fs-h2: clamp(1.875rem, 1.4rem + 1.6vw, 2.75rem);
-  --fs-h3: clamp(1.375rem, 1.2rem + .6vw, 1.75rem);
+  --fs-h1: clamp(1.9375rem, 1.12rem + 2.6vw, 3.4rem);
+  --fs-h2: clamp(1.625rem, 1.25rem + 1.05vw, 2.375rem);
+  --fs-h3: clamp(1.25rem, 1.12rem + 0.42vw, 1.5rem);
+  --fs-subhead: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+  --fs-epigraph: clamp(1.125rem, 1.05rem + 0.3vw, 1.3125rem);
   --fs-benefit: 1.0625rem;
   --fs-body: 1rem;
-  --fs-cta: 0.9375rem;
-  --fs-small: 0.875rem;
-}
-
-/*
- * Pyramid tier palettes. Each tier reads --{tier}-l / --{tier}-r (left / right half
- * fill), the matching -hover values, and an optional outline (--{tier}-stroke, or
- * -stroke-l / -stroke-r per half) for any fill under 3:1 against the paper.
- * The chosen palette is the default (data-palette="c" on the selector section);
- * A and B are kept as one-attribute alternatives — see HANDOVER.md for the comparison.
- */
-[data-palette="a"] {
-  /* A · weighted foundation */
-  --foundation-l: var(--slate);     --foundation-r: var(--slate);
-  --foundation-l-hover: #232A31;    --foundation-r-hover: #232A31;
-  --middle-l: var(--graphite-2);    --middle-r: var(--graphite-2);
-  --middle-l-hover: #5F6168;        --middle-r-hover: #5F6168;
-  --apex-l: #EADFD0;                --apex-r: #EADFD0;
-  --apex-l-hover: #DCC6A8;          --apex-r-hover: #DCC6A8;
-  --apex-stroke: var(--bronze);
-}
-
-[data-palette="b"] {
-  /* B · ascending concentration */
-  --foundation-l: var(--bronze-wash); --foundation-r: var(--bronze-wash);
-  --foundation-l-hover: #E6D6C1;      --foundation-r-hover: #E6D6C1;
-  --foundation-stroke: var(--bronze);
-  --middle-l: #D7B995;                --middle-r: #D7B995;
-  --middle-l-hover: #C9A37A;          --middle-r-hover: #C9A37A;
-  --middle-stroke: var(--bronze);
-  --apex-l: var(--bronze);            --apex-r: var(--bronze);
-  --apex-l-hover: var(--bronze-ink);  --apex-r-hover: var(--bronze-ink);
-}
-
-[data-palette="c"] {
-  /* C · helmet split: warm left half, cool right half, deepening toward the apex.
-     Pale bands carry 1px strokes in their half's colour (bronze 4.37, graphite-2 4.30 : 1). */
-  --foundation-l: #EEE5D9;          --foundation-r: #E5E6E8;
-  --foundation-l-hover: #E6D9C7;    --foundation-r-hover: #D9DADD;
-  --foundation-stroke-l: var(--bronze);
-  --foundation-stroke-r: var(--graphite-2);
-  --middle-l: #D8BC9A;              --middle-r: #BABDC2;
-  --middle-l-hover: #CDAD86;        --middle-r-hover: #ADB0B6;
-  --middle-stroke-l: var(--bronze);
-  --middle-stroke-r: var(--graphite-2);
-  --apex-l: var(--bronze);          --apex-r: #5D646C;         /* 4.37 / 5.69 : 1 */
-  --apex-l-hover: var(--bronze-ink); --apex-r-hover: #4E545B;
+  --fs-cta: 1rem;
+  --fs-small: 0.9375rem;
 }
